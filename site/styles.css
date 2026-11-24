@@ -126,8 +126,23 @@ body[data-look="vinyl"]  { --look: conic-gradient(from var(--a, 0deg), #ff71ce, 
 .lights-copy { color: var(--muted); font-size: 18px; margin: -32px 0 48px; }
 .eq { display: flex; align-items: flex-end; gap: clamp(2px, .4vw, 6px); height: 160px; margin-bottom: 36px; }
 .eq span { flex: 1; height: 100%; border-radius: 3px 3px 0 0; transform-origin: bottom; transform: scaleY(.15); background: linear-gradient(0deg, #22c8ff, #8f86ff 45%, #ff3ff0); box-shadow: 0 0 14px rgba(255, 63, 240, .25); }
-.effects { list-style: none; display: flex; flex-wrap: wrap; gap: 10px; }
-.effects li { padding: 9px 18px; border-radius: 999px; background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); font-weight: 600; font-size: 15px; }
+.lights-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: clamp(32px, 5vw, 72px); align-items: center; margin-bottom: 56px; }
+.lights-text h2 { margin-bottom: 24px; }
+.lights-text .lights-copy { margin: 0 0 32px; }
+.picker-label { font-size: 14px; color: var(--muted); margin: 0 0 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.chips button {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 9px 16px; border: 0; border-radius: 999px; cursor: pointer;
+  background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); color: #d9d4e2;
+  font: inherit; font-weight: 600; font-size: 15px; transition: background .2s, color .2s, box-shadow .2s;
+}
+.chips button:hover { background: rgba(255,255,255,.11); color: #fff; }
+.chips button[aria-checked="true"] { background: #f4f2f7; color: #000; box-shadow: 0 0 0 1px #fff, 0 0 24px rgba(160, 90, 255, .45); }
+.chips .sw { width: 22px; height: 10px; border-radius: 5px; background: var(--sw); flex: none; }
+.effect-desc { min-height: 3em; color: #cfcad8; font-size: 15px; margin: 0 0 22px; max-width: 46ch; }
+.mini-monitor { margin: 0; }
+.screen.mini { border-radius: 12px; box-shadow: 0 0 0 1px rgba(255,255,255,.08), 0 30px 90px rgba(0,0,0,.7); }
+.mini-monitor figcaption { margin-top: 14px; color: var(--muted); font-size: 13.5px; }
 
 /* ---------- 7. Finale ---------- */
 .home .finale { text-align: center; padding-bottom: 140px; }
@@ -144,7 +159,7 @@ body[data-look="vinyl"]  { --look: conic-gradient(from var(--a, 0deg), #ff71ce, 
 .motion .chapter { opacity: 0; }
 .motion .screen-off { opacity: 1; }
 .motion .wall-light { opacity: 0; }
-.motion .effects li, .motion .feature-list article, .motion .steps > li, .motion .faq details, .motion .finale .bubble-btn, .motion .lights-copy { opacity: 0; }
+.motion .chips button, .motion .mini-monitor, .motion .feature-list article, .motion .steps > li, .motion .faq details, .motion .finale .bubble-btn, .motion .lights-copy { opacity: 0; }
 .motion .finale-logo, .motion .intro-logo, .motion .wordmark { opacity: 0; }
 
 /* ---------- Sections ---------- */
@@ -220,6 +235,8 @@ kbd { font-family: inherit; font-size: .88em; font-weight: 600; padding: 1px 7px
 
 /* ---------- Responsive ---------- */
 @media (max-width: 960px) {
+  .lights-grid { grid-template-columns: 1fr; }
+  .mini-monitor { order: -1; }
   .story { height: 520vh; }
   .story-pin { grid-template-columns: 1fr; grid-template-rows: auto auto; align-content: center; gap: 28px; padding-top: 70px; }
   .chapters { height: 190px; order: 2; }

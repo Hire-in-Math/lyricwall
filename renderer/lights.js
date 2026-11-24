@@ -82,7 +82,7 @@ const Lights = (() => {
       for (let i = 0; i < N; i++) { U[i] = t * speed * 0.3 + (i / N) * 0.15; I[i] = b; }
     } else if (style === 'chase') {
       const k = Math.min(6, Math.max(2, colors.length));
-      const tail = 0.16 + 0.1 * (1 - L.speed);
+      const tail = 0.22 + 0.12 * (1 - L.speed);
       for (let i = 0; i < N; i++) {
         const p = i / N; let best = 0, bu = 0;
         for (let j = 0; j < k; j++) {
@@ -90,7 +90,7 @@ const Lights = (() => {
           let d = head - p; if (d < 0) d += 1;          // distance behind the head
           if (d < tail) { const v = Math.pow(1 - d / tail, 2.2); if (v > best) { best = v; bu = j / k; } }
         }
-        I[i] = 0.06 + best * 0.94; U[i] = best > 0.02 ? bu : p * rep - t * speed * 0.2;
+        I[i] = 0.1 + best * 0.9; U[i] = best > 0.02 ? bu : p * rep - t * speed * 0.2;
       }
     } else if (style === 'spectrum') {
       // bottom-center = bass … top-center = treble, mirrored left/right
@@ -99,7 +99,7 @@ const Lights = (() => {
         const p = i / N, d = Math.min(p, 1 - p) * 2; // 0 at bottom-center, 1 at top-center
         let a;
         if (bins) { const bi = Math.min(bins - 1, Math.floor(Math.pow(d, 1.7) * bins * 0.55)); a = spec[bi] / 255; a = Math.pow(a, 1.5); }
-        else a = 0.5 + 0.25 * Math.sin(d * 9 - t * 3) + 0.2 * Math.sin(d * 23 + t * 5) * beat;
+        else a = 0.5 + 0.32 * Math.sin(d * 7 - t * 2.6) * Math.sin(t * 1.3 + d * 3) + 0.22 * Math.sin(d * 19 + t * 4.2) + beat * 0.4; // no audio: animated stand-in
         I[i] = 0.08 + 0.92 * Math.max(0, Math.min(1, a));
         U[i] = d * rep * 0.5 - t * speed * 0.3;
       }

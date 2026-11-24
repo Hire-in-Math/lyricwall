@@ -25,12 +25,48 @@
   }
   frame?.addEventListener('load', () => setLook(current));
 
-  // Scale the 1600x1000 app to fit the monitor
-  const screen = $('#screen');
-  if (screen && frame) {
-    const fit = () => { frame.style.transform = `scale(${screen.clientWidth / 1600})`; };
-    new ResizeObserver(fit).observe(screen); fit();
-  }
+  // Scale the 1600x1000 app to fit each screen
+  $$('.screen').forEach((scr) => {
+    const f = scr.querySelector('iframe');
+    if (!f) return;
+    const fit = () => { f.style.transform = `scale(${scr.clientWidth / (+f.dataset.w || 1600)})`; };
+    new ResizeObserver(fit).observe(scr); fit();
+  });
+
+  // ---------- Light effect picker: click to preview on the mini monitor ----------
+  const lightsFrame = $('#lightsDemo');
+  const FX_DESC = {
+    flow: 'Colors stream around the edges of your screen.',
+    chase: 'Streaks of light race around the screen with glowing tails.',
+    spectrum: 'Each part of the edge reacts to a different frequency: bass at the bottom, treble at the top.',
+    breathe: 'The whole edge glows and fades slowly, like it\'s breathing.',
+    static: 'A still ring of color that stays put.',
+  };
+  const lightState = { 'lights.style': 'flow', 'lights.colors': 'rainbow' };
+  const sendLights = () => lightsFrame?.contentWindow?.postMessage({ type: 'lw-set', settings: lightState }, '*');
+  lightsFrame?.addEventListener('load', sendLights);
+  $$('.chips').forEach((group) => {
+    const key = group.dataset.key;
+    const btns = [...group.querySelectorAll('button')];
+    btns.forEach((b) => b.addEventListener('click', () => {
+      btns.forEach((x) => x.setAttribute('aria-checked', x === b));
+      lightState[key] = b.dataset.value;
+      sendLights();
+      if (key === 'lights.style') $('#fxDesc').textContent = FX_DESC[b.dataset.value];
+      if (!reduce) {
+        animate(b, { scale: [0.9, 1], duration: 500, ease: 'outElastic(1, .5)' });
+        animate('#lightsScreen', { scale: [0.985, 1], duration: 600, ease: 'outElastic(1, .6)' });
+      }
+    }));
+    // arrow keys move between options, like a native radio group
+    group.addEventListener('keydown', (e) => {
+      const i = btns.indexOf(document.activeElement);
+      if (i < 0 || !['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
+      e.preventDefault();
+      const n = btns[(i + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : btns.length - 1)) % btns.length];
+      n.focus(); n.click();
+    });
+  });
 
   // ---------- Equalizer bars ----------
   const eq = $('#eq');
@@ -107,9 +143,13 @@
       autoplay: onScroll({ target: '#eq' }),
     });
 
-    animate('.effects li', {
-      opacity: [0, 1], y: [20, 0], scale: [0.8, 1], delay: stagger(80), duration: 700, ease: 'outBack(1.6)',
-      autoplay: onScroll({ target: '.effects', enter: '90% start' }),
+    animate('.chips button', {
+      opacity: [0, 1], y: [20, 0], scale: [0.8, 1], delay: stagger(50), duration: 700, ease: 'outBack(1.6)',
+      autoplay: onScroll({ target: '.picker', enter: '90% start' }),
+    });
+    animate('.mini-monitor', {
+      opacity: [0, 1], scale: [0.9, 1], y: [40, 0], duration: 1200, ease: 'outExpo',
+      autoplay: onScroll({ target: '.mini-monitor', enter: '90% start' }),
     });
 
     // ---------- Headings rise word by word as they enter ----------

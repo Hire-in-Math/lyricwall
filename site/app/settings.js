@@ -33,7 +33,9 @@ function deepMerge(base, over) {
   }
   return out;
 }
+const EMBED = new URLSearchParams(location.search).has('embed');
 const S = (() => {
+  if (EMBED) return deepMerge(DEFAULTS, {});
   try { return deepMerge(DEFAULTS, JSON.parse(localStorage.getItem('lw-settings') || '{}')); } catch { return deepMerge(DEFAULTS, {}); }
 })();
 function sget(path) { return path.split('.').reduce((o, k) => o?.[k], S); }
@@ -41,7 +43,7 @@ function sset(path, v) {
   const ks = path.split('.'); let o = S;
   ks.slice(0, -1).forEach((k) => (o = o[k]));
   o[ks.at(-1)] = v;
-  try { localStorage.setItem('lw-settings', JSON.stringify(S)); } catch {}
+  if (!EMBED) try { localStorage.setItem('lw-settings', JSON.stringify(S)); } catch {}
   window.onSetting?.(path, v);
 }
 

@@ -113,12 +113,41 @@
       <path d="M0 200 L560 200 C680 200 720 150 800 150 C880 150 920 200 1040 200 L1600 200"/>
     </svg>
     <div class="lights-inner">
-      <h2 class="split">Light that moves with your music.</h2>
-      <p class="lights-copy">LyricWall listens to your computer's sound and pulses on every bass hit. Pick an effect, match the album art or choose your own colors.</p>
+      <div class="lights-grid">
+        <div class="lights-text">
+          <h2 class="split">Light that moves with your music.</h2>
+          <p class="lights-copy">LyricWall listens to your computer's sound and pulses on every bass hit. Try an effect and a color theme.</p>
+          <div class="picker">
+            <p class="picker-label" id="fxLabel">Effect</p>
+            <div class="chips effects" role="radiogroup" aria-labelledby="fxLabel" data-key="lights.style">
+              <button role="radio" aria-checked="true" data-value="flow">Flow</button>
+              <button role="radio" aria-checked="false" data-value="chase">Chase</button>
+              <button role="radio" aria-checked="false" data-value="spectrum">Spectrum</button>
+              <button role="radio" aria-checked="false" data-value="breathe">Breathe</button>
+              <button role="radio" aria-checked="false" data-value="static">Static</button>
+            </div>
+            <p class="effect-desc" id="fxDesc" aria-live="polite">Colors stream around the edges of your screen.</p>
+            <p class="picker-label" id="colLabel">Colors</p>
+            <div class="chips colors" role="radiogroup" aria-labelledby="colLabel" data-key="lights.colors">
+              <button role="radio" aria-checked="true" data-value="rainbow"><span class="sw" style="--sw: linear-gradient(90deg,#ff0040,#ffe600,#00ff6a,#00d5ff,#b300ff)"></span>Rainbow</button>
+              <button role="radio" aria-checked="false" data-value="album"><span class="sw" style="--sw: linear-gradient(90deg,#ff3fa4,#ff8a3d,#5b2bff)"></span>Album art</button>
+              <button role="radio" aria-checked="false" data-value="cyberpunk"><span class="sw" style="--sw: linear-gradient(90deg,#ff00a0,#00f0ff,#fffb00,#7a00ff)"></span>Cyberpunk</button>
+              <button role="radio" aria-checked="false" data-value="vaporwave"><span class="sw" style="--sw: linear-gradient(90deg,#ff71ce,#01cdfe,#05ffa1,#b967ff)"></span>Vaporwave</button>
+              <button role="radio" aria-checked="false" data-value="sunset"><span class="sw" style="--sw: linear-gradient(90deg,#ff5e62,#ff9966,#ffcc70,#b84dff)"></span>Sunset</button>
+              <button role="radio" aria-checked="false" data-value="ocean"><span class="sw" style="--sw: linear-gradient(90deg,#00c6ff,#0072ff,#00f5c4)"></span>Ocean</button>
+              <button role="radio" aria-checked="false" data-value="fire"><span class="sw" style="--sw: linear-gradient(90deg,#ff1e00,#ff7b00,#ffcf00)"></span>Fire</button>
+            </div>
+          </div>
+        </div>
+        <figure class="mini-monitor">
+          <div class="screen mini" id="lightsScreen">
+            <iframe id="lightsDemo" data-w="960" style="width:960px;height:600px" title="Light effect preview" loading="lazy" tabindex="-1"
+              src="app/index.html?embed=1&mode=lyrics&t=17&lyrics.style=minimal&bg.source=black&lights.style=flow&lights.colors=rainbow&lights.thickness=1&lights.glow=1&lights.brightness=1&lights.spread=2&player.show=false"></iframe>
+          </div>
+          <figcaption>Live preview. On your screen the lights also pulse to the music.</figcaption>
+        </figure>
+      </div>
       <div class="eq" id="eq" aria-hidden="true"></div>
-      <ul class="effects">
-        <li>Flow</li><li>Chase</li><li>Spectrum</li><li>Breathe</li><li>Static</li>
-      </ul>
     </div>
   </section>
 
