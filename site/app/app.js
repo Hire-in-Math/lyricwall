@@ -185,6 +185,7 @@ function fillWords(el, idx) {
   line.text.split(' ').forEach((w, i, arr) => {
     const sp = document.createElement('span');
     sp.className = 'w'; sp.textContent = w; sp.dataset.t = times[i];
+    if (line.words && line.words.length === arr.length) sp.dataset.exact = 1;
     el.appendChild(sp); spans.push(sp);
     if (i < arr.length - 1) el.appendChild(document.createTextNode(' '));
   });
@@ -309,6 +310,23 @@ function stackView(kind) {
 }
 Views.focus = stackView('focus');
 Views.minimal = stackView('minimal');
+Views.chat.font = Views.scroll.font = Views.focus.font = Views.minimal.font = 'system';
+Object.assign(Views, ExtraViews);
+
+// fonts: 'auto' uses each style's own font
+const FONT_STACKS = {
+  system: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", sans-serif',
+  archivo: '"LW Archivo", sans-serif', unbounded: '"LW Unbounded", sans-serif', space: '"LW Space", sans-serif',
+  fraunces: '"LW Fraunces", Georgia, serif', playfair: '"LW Playfair", Georgia, serif', instrument: '"LW Instrument", Georgia, serif',
+  bebas: '"LW Bebas", Impact, sans-serif', mono: '"LW Mono", ui-monospace, Menlo, Consolas, monospace',
+  neon: '"LW Neon", sans-serif', caveat: '"LW Caveat", cursive', doto: '"LW Doto", ui-monospace, monospace',
+};
+function applyLyricFont() {
+  const v = Views[S.lyrics.style] || Views.chat;
+  const key = S.lyrics.font && S.lyrics.font !== 'auto' ? S.lyrics.font : v.font || 'system';
+  document.documentElement.style.setProperty('--lf', FONT_STACKS[key] || FONT_STACKS.system);
+  document.body.dataset.font = key;
+}
 
 // small line under the player in Cover / Vinyl
 const ArtLyric = {
@@ -325,7 +343,13 @@ const ArtLyric = {
 function renderLyrics(fresh) {
   const v = Views[S.lyrics.style] || Views.chat;
   document.body.dataset.lyrics = S.lyrics.style;
-  if (fresh) { v.init(); $('artLyric').innerHTML = ''; }
+  if (fresh) {
+    $('lyrics').innerHTML = ''; $('lyrics').className = 'lyrics lyr-' + S.lyrics.style;
+    applyLyricFont();
+    if (state.lines.length || !v.needsLines) v.init();
+    $('artLyric').innerHTML = '';
+    if (window.anime) anime.animate('#lyrics', { opacity: [0, 1], scale: [0.97, 1], duration: 600, ease: 'outExpo' });
+  }
   const idx = state.idx < -1 ? -1 : state.idx;
   if (!state.lines.length) return;
   state.liveWords = [...v.line(idx), ...ArtLyric.line(idx)];
@@ -333,9 +357,17 @@ function renderLyrics(fresh) {
 }
 function updateWords(force) {
   const p = lyricPos();
+  const v = Views[S.lyrics.style];
   for (const w of state.liveWords) {
     const on = +w.dataset.t <= p;
-    if (on !== w.classList.contains('on') || force) w.classList.toggle('on', on);
+    const was = w.classList.contains('on');
+    if (on !== was || force) w.classList.toggle('on', on);
+    if (on && !w.dataset.fired) {
+      w.dataset.fired = 1;
+      const fresh = p - +w.dataset.t < 700; // skip effects for words that were already over when they appeared
+      if (fresh) FX.onWordOn(w);
+      if (w.isConnected && $('lyrics').contains(w)) try { v?.onWord?.(w); } catch (e) { console.warn(e); }
+    }
   }
 }
 
@@ -373,6 +405,7 @@ function tick() {
       }
       updateWords();
     }
+    if (S.mode === 'lyrics') { const v = Views[S.lyrics.style]; try { v?.frame?.(performance.now()); } catch (e) { console.warn(e); } }
   }
   requestAnimationFrame(tick);
 }
@@ -390,6 +423,7 @@ async function onNewTrack(tr) {
   if (state.track !== tr) return;
   tr.artData = artData;
   document.querySelectorAll('.art-src').forEach((img) => { img.src = artData || ''; });
+  showNowPill(tr);
   const img = await loadImg(artData);
   if (img) {
     try {
@@ -509,6 +543,9 @@ function beatFrame() {
   if (S.beat.enabled && playing) {
     if (beat.analyser) {
       beat.analyser.getByteFrequencyData(beat.data);
+      FX.sample(beat.data);
+      if (!beat.td) beat.td = new Uint8Array(beat.analyser.fftSize);
+      beat.analyser.getByteTimeDomainData(beat.td); window.LW.wave = beat.td;
       const bass = (beat.data[1] + beat.data[2] + beat.data[3] + beat.data[4]) / 4;
       beat.hist.push(bass); if (beat.hist.length > 45) beat.hist.shift();
       const avg = beat.hist.reduce((a, b) => a + b, 0) / beat.hist.length;
@@ -535,6 +572,8 @@ window.onSetting = (key, v) => {
   if (key === 'beat.enabled') setBeat(v);
   if (key === 'lyrics.style' || key === 'lyrics.wordByWord' || key === 'lyrics.cardPhotos') { state.liveWords = []; renderLyrics(true); }
   if (key === 'lyrics.cardFolder') state.cardFolderList = [];
+  if (key === 'lyrics.font') applyLyricFont();
+  if (key === 'window.launchFullscreen') api?.setPref('launchFullscreen', v);
   if (key === 'lyrics.size') document.documentElement.style.setProperty('--lyricScale', v);
   if (key === 'lyrics.onArtModes') document.body.classList.toggle('no-art-lyrics', !v);
   if (key.startsWith('player.')) applyPlayerPrefs();
@@ -577,10 +616,13 @@ $('copyRedir').onclick = async () => { try { await navigator.clipboard.writeText
 window.addEventListener('keydown', async (e) => {
   if (e.target.tagName === 'INPUT') return;
   const k = e.key.toLowerCase();
-  if (k === 'escape') openSettings(false);
+  if (k === 'escape') {
+    if (document.body.classList.contains('settings-open')) openSettings(false);
+    else if (api && (await api.isFullscreen())) api.setFullscreen(false);
+  }
   if (k === 's' || k === ',') openSettings();
   if (k === 'm') cycleMode();
-  if (k === 'l') { const st = ['chat', 'scroll', 'focus', 'minimal']; sset('lyrics.style', st[(st.indexOf(S.lyrics.style) + 1) % st.length]); toast('Lyrics: ' + S.lyrics.style); }
+  if (k === 'l') nextStyle(e.shiftKey ? -1 : 1);
   if (k === 'c') { const order = ['album', 'background', ...Object.keys(COLOR_PRESETS), 'custom']; sset('lights.colors', order[(order.indexOf(S.lights.colors) + 1) % order.length]); toast('Lights: ' + S.lights.colors); }
   if (k === 'e') { const st = ['flow', 'chase', 'spectrum', 'breathe', 'static']; sset('lights.style', st[(st.indexOf(S.lights.style) + 1) % st.length]); toast('Effect: ' + S.lights.style); }
   if (k === ' ') { e.preventDefault(); control('toggle'); }
@@ -593,6 +635,48 @@ window.addEventListener('keydown', async (e) => {
   if (k === '[' || k === ']') { sset('offsetMs', S.offsetMs + (k === ']' ? 250 : -250)); toast(`Lyric offset ${S.offsetMs > 0 ? '+' : ''}${(S.offsetMs / 1000).toFixed(2)}s`); }
   if (document.body.classList.contains('settings-open')) renderSettings();
 });
+
+function nextStyle(dir = 1) {
+  const keys = STYLE_LIST.map((x) => x[0]);
+  const next = keys[(keys.indexOf(S.lyrics.style) + dir + keys.length) % keys.length];
+  sset('lyrics.style', next);
+  if (S.mode !== 'lyrics') setMode('lyrics');
+  toast(styleInfo(next)[1]);
+}
+
+// "Now playing" pop when the song changes (lyrics mode, where the player is small)
+function showNowPill(tr) {
+  const p = $('nowPill');
+  if (!window.anime || S.mode !== 'lyrics' || document.body.classList.contains('embed')) return;
+  p.querySelector('img').src = tr.artData || '';
+  p.querySelector('b').textContent = tr.title; p.querySelector('span').textContent = tr.artist;
+  anime.createTimeline()
+    .add(p, { opacity: [0, 1], y: [-30, 0], scale: [0.9, 1], duration: 600, ease: 'outBack(1.4)' })
+    .add(p, { opacity: 0, y: -20, duration: 500, ease: 'inQuad' }, 3600);
+}
+
+// ---------- app menu, screens, updates ----------
+function showUpdateBanner(st) {
+  const b = $('updBanner');
+  if (st.state === 'ready' || st.state === 'available') {
+    b.querySelector('.ub-text').textContent = st.state === 'ready' ? `LyricWall ${st.version} is ready` : `LyricWall ${st.version} is out`;
+    b.querySelector('.ub-btn').textContent = st.state === 'ready' ? 'Restart' : 'Download';
+    b.classList.add('show');
+  } else b.classList.remove('show');
+}
+if (api) {
+  api.on('menu', (a) => {
+    if (a === 'settings') openSettings(true);
+    else if (a === 'nextStyle') nextStyle(1);
+    else if (a.startsWith('mode:')) setMode(a.slice(5));
+  });
+  api.on('displays', (d) => { UI.displays = d; if (document.body.classList.contains('settings-open')) renderSettings(); });
+  api.on('update', (st) => { UI.update = st; showUpdateBanner(st); if (document.body.classList.contains('settings-open')) renderSettings(); });
+  api.on('onTop', (v) => { if (S.window.onTop !== v) sset('window.onTop', v); });
+  api.on('fullscreen', (v) => document.body.classList.toggle('is-fullscreen', v));
+  $('updBanner').querySelector('.ub-btn').onclick = () => api.installUpdate();
+  $('updBanner').querySelector('.ub-x').onclick = () => $('updBanner').classList.remove('show');
+}
 
 // ---------- demo mode (open index.html in a browser, no Spotify) ----------
 const DEMO = (() => {
@@ -652,6 +736,8 @@ const DEMO = (() => {
   wake();
   if (api) {
     if (S.window.onTop) api.setOnTop(true);
+    api.setPref('launchFullscreen', !!S.window.launchFullscreen);
+    document.body.classList.add('is-app', 'os-' + ((await api.appInfo()).platform || ''));
     const s = await api.status();
     $('clientId').value = s.clientId;
     if (!s.loggedIn) showSetup();

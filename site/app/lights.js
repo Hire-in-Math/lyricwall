@@ -139,5 +139,5 @@ const Lights = (() => {
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  return { setColors, resize };
+  return { setColors, resize, getColors: () => colors };
 })();

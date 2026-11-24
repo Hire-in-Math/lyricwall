@@ -1,0 +1,14 @@
+/* Fonts bundled with LyricWall (all SIL Open Font License) */
+@font-face { font-family: "LW Archivo"; src: url("fonts/archivo.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-stretch: 62% 125%; font-display: swap; }
+@font-face { font-family: "LW Unbounded"; src: url("fonts/unbounded.woff2") format("woff2"); font-weight: 200 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "LW Space"; src: url("fonts/space.woff2") format("woff2"); font-weight: 300 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "LW Fraunces"; src: url("fonts/fraunces.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "LW Playfair"; src: url("fonts/playfair.woff2") format("woff2"); font-weight: 400 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "LW Playfair"; src: url("fonts/playfair-italic.woff2") format("woff2"); font-weight: 400 900; font-style: italic; font-display: swap; }
+@font-face { font-family: "LW Instrument"; src: url("fonts/instrument.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "LW Instrument"; src: url("fonts/instrument-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "LW Bebas"; src: url("fonts/bebas.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "LW Mono"; src: url("fonts/mono.woff2") format("woff2"); font-weight: 100 800; font-style: normal; font-display: swap; }
+@font-face { font-family: "LW Neon"; src: url("fonts/neon.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "LW Caveat"; src: url("fonts/caveat.woff2") format("woff2"); font-weight: 400 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "LW Doto"; src: url("fonts/doto.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }

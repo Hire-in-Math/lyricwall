@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; media-src 'self' blob: mediastream:" />
   <title>LyricWall</title>
+  <link rel="stylesheet" href="fonts.css" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body class="mode-lyrics">
@@ -59,7 +60,7 @@
     </div>
 
     <div id="idle" class="idle hidden">
-      <div class="dots"><span></span><span></span><span></span></div>
+      <img class="idle-logo" src="icon.png" alt="" />
       <p>Play something on Spotify</p>
     </div>
 
@@ -98,7 +99,7 @@
       </button>
     </nav>
 
-    <div class="hint">S settings · M mode · L lyric style · E light effect · C light colors · Space play/pause · ← → skip · F fullscreen</div>
+    <div class="hint">S settings · M mode · L next lyric style · E light effect · C colors · Space play/pause · ← → skip · F fullscreen · Esc exit</div>
     <div id="toast" class="toast"></div>
   </main>
 
@@ -108,8 +109,15 @@
     <div id="settingsBody" class="settings-body"></div>
   </aside>
 
+  <div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
+  <div id="nowPill" class="now-pill" aria-hidden="true"><img alt="" /><div><b></b><span></span></div></div>
+  <div id="updBanner" class="upd-banner" role="status"><span class="ub-text"></span><button class="ub-btn"></button><button class="ub-x" aria-label="Dismiss">×</button></div>
+
+  <script src="anime.umd.min.js"></script>
   <script src="settings.js"></script>
   <script src="lights.js"></script>
+  <script src="fx.js"></script>
+  <script src="views.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

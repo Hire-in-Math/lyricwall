@@ -4,7 +4,9 @@ Spotify lyrics that glow on your screen. LyricWall turns whatever you're playing
 
 **Download and setup guide: https://lyricwall-app.netlify.app**
 
-- Four lyric styles: Messages (chat bubbles with real place photos), Scroll, Karaoke and Minimal
+- 18 lyric styles (Messages, Scroll, Karaoke, Minimal, Kinetic, Split-flap grid, Editorial, Gravity stack, Fisheye, Word cloud, Constellation, Cinema, Neon, Waveform, Polaroids, LED ticker, Terminal, Call & response) in 12 fonts
+- Words sung louder are emphasized; words like fire or moon pop matching icons
+- Choose which screen it shows on; auto-updates
 - Cover and Vinyl views with play, pause and skip
 - RGB edge lights with five effects, album-matched or custom colors
 - Pulses to the beat of your music

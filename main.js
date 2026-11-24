@@ -1,5 +1,5 @@
 // LyricWall — main process: window, Spotify auth (PKCE), now-playing + lyrics fetching.
-const { app, BrowserWindow, ipcMain, shell, session, desktopCapturer, dialog, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, session, desktopCapturer, dialog, nativeImage, Menu, screen } = require('electron');
 const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -29,16 +29,141 @@ function setupAudioCapture() {
   });
 }
 
+const isMac = process.platform === 'darwin';
+const SITE = 'https://lyricwall-app.netlify.app';
+const send = (ch, data) => { if (win && !win.isDestroyed()) win.webContents.send(ch, data); };
+
+// ---------- Window ----------
+function savedBoundsFor() {
+  // Reopen where it was last time, if that screen is still connected
+  const b = store.bounds;
+  const displays = screen.getAllDisplays();
+  if (b && displays.some((d) => b.x >= d.bounds.x - 50 && b.y >= d.bounds.y - 50 && b.x < d.bounds.x + d.bounds.width && b.y < d.bounds.y + d.bounds.height)) return b;
+  return { width: 1280, height: 760 };
+}
+
 function createWindow() {
+  const b = savedBoundsFor();
   win = new BrowserWindow({
-    width: 1280,
-    height: 760,
+    ...b,
+    minWidth: 520, minHeight: 360,
     backgroundColor: '#000000',
-    frame: false,
-    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : undefined,
+    title: 'LyricWall',
+    show: false,
+    // Mac: real traffic-light buttons over the content. Windows: real minimize / maximize / close buttons.
+    titleBarStyle: 'hidden',
+    ...(isMac ? { trafficLightPosition: { x: 16, y: 14 } } : { titleBarOverlay: { color: '#000000', symbolColor: '#e8e6ee', height: 34 } }),
+    autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true },
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  win.once('ready-to-show', () => {
+    win.show();
+    if (store.displayId != null) moveToDisplay(store.displayId, !!store.launchFullscreen);
+    else if (store.launchFullscreen) win.setFullScreen(true);
+  });
+  const remember = () => { if (!win.isFullScreen() && !win.isMaximized() && !win.isMinimized()) { store.bounds = win.getBounds(); saveStore(); } };
+  win.on('resized', remember); win.on('moved', remember);
+  win.on('enter-full-screen', () => send('fullscreen', true));
+  win.on('leave-full-screen', () => send('fullscreen', false));
+  win.on('closed', () => { win = null; });
+}
+
+// ---------- Screens ----------
+function displayList() {
+  const primary = screen.getPrimaryDisplay().id;
+  const cur = win ? screen.getDisplayMatching(win.getBounds()).id : primary;
+  return screen.getAllDisplays().map((d, i) => ({
+    id: d.id,
+    name: d.label || (d.internal ? 'Built-in display' : `Display ${i + 1}`),
+    size: `${d.size.width}×${d.size.height}`,
+    primary: d.id === primary, current: d.id === cur,
+  }));
+}
+function moveToDisplay(id, fullscreen) {
+  const d = screen.getAllDisplays().find((x) => x.id === id);
+  if (!d || !win) return false;
+  const go = () => {
+    const wa = d.workArea;
+    const w = Math.min(1280, wa.width - 80), h = Math.min(760, wa.height - 80);
+    win.setBounds({ x: Math.round(wa.x + (wa.width - w) / 2), y: Math.round(wa.y + (wa.height - h) / 2), width: w, height: h });
+    if (fullscreen) setTimeout(() => win.setFullScreen(true), 150);
+    send('displays', displayList());
+  };
+  if (win.isFullScreen()) { win.once('leave-full-screen', () => setTimeout(go, 200)); win.setFullScreen(false); } else go();
+  return true;
+}
+function watchDisplays() {
+  const changed = () => {
+    send('displays', displayList());
+    if (win && !screen.getAllDisplays().some((d) => d.id === screen.getDisplayMatching(win.getBounds()).id)) win.center();
+    buildMenu();
+  };
+  screen.on('display-added', changed); screen.on('display-removed', changed); screen.on('display-metrics-changed', () => send('displays', displayList()));
+}
+
+// ---------- Menu ----------
+function buildMenu() {
+  const toRenderer = (action) => () => send('menu', action);
+  const displays = displayList();
+  const template = [
+    ...(isMac ? [{ label: 'LyricWall', submenu: [
+      { role: 'about' },
+      { label: 'Check for Updates…', click: () => checkUpdates(true) },
+      { type: 'separator' },
+      { label: 'Settings…', accelerator: 'Cmd+,', click: toRenderer('settings') },
+      { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' },
+      { type: 'separator' }, { role: 'quit' },
+    ] }] : [{ label: 'File', submenu: [
+      { label: 'Settings', accelerator: 'Ctrl+,', click: toRenderer('settings') },
+      { label: 'Check for Updates…', click: () => checkUpdates(true) },
+      { type: 'separator' }, { role: 'quit', label: 'Quit LyricWall' },
+    ] }]),
+    { label: 'View', submenu: [
+      { label: 'Lyrics', accelerator: 'CmdOrCtrl+1', click: toRenderer('mode:lyrics') },
+      { label: 'Cover', accelerator: 'CmdOrCtrl+2', click: toRenderer('mode:cover') },
+      { label: 'Vinyl', accelerator: 'CmdOrCtrl+3', click: toRenderer('mode:vinyl') },
+      { type: 'separator' },
+      { label: 'Next Lyric Style', accelerator: 'CmdOrCtrl+L', click: toRenderer('nextStyle') },
+      { type: 'separator' },
+      { role: 'togglefullscreen' },
+      { label: 'Always on Top', type: 'checkbox', checked: !!win?.isAlwaysOnTop(), click: (m) => { win.setAlwaysOnTop(m.checked, 'floating'); send('onTop', m.checked); } },
+    ] },
+    { label: 'Display', submenu: displays.length > 1
+      ? displays.flatMap((d) => [{ label: `Move to ${d.name} (${d.size})${d.primary ? ' — main' : ''}`, click: () => { store.displayId = d.id; saveStore(); moveToDisplay(d.id, true); } }])
+      : [{ label: 'Only one display connected', enabled: false }] },
+    { role: 'windowMenu' },
+    { role: 'help', submenu: [
+      { label: 'Setup Guide', click: () => shell.openExternal(SITE + '/setup.html') },
+      { label: 'LyricWall Website', click: () => shell.openExternal(SITE) },
+    ] },
+  ];
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
+// ---------- Auto-updates ----------
+// Windows: downloads in the background and installs on restart.
+// Mac: Apple only allows silent updates for signed apps, so we tell the user and link the new download.
+let autoUpdater = null;
+let updateState = { state: 'idle' };
+function setUpdate(st) { updateState = st; send('update', st); }
+function initUpdates() {
+  if (!app.isPackaged) return;
+  try { ({ autoUpdater } = require('electron-updater')); } catch { return; }
+  autoUpdater.autoDownload = !isMac;
+  autoUpdater.autoInstallOnAppQuit = !isMac;
+  autoUpdater.on('checking-for-update', () => setUpdate({ state: 'checking' }));
+  autoUpdater.on('update-not-available', () => setUpdate({ state: 'current', version: app.getVersion() }));
+  autoUpdater.on('update-available', (i) => setUpdate({ state: isMac ? 'available' : 'downloading', version: i.version, percent: 0 }));
+  autoUpdater.on('download-progress', (p) => setUpdate({ state: 'downloading', version: updateState.version, percent: Math.round(p.percent) }));
+  autoUpdater.on('update-downloaded', (i) => setUpdate({ state: 'ready', version: i.version }));
+  autoUpdater.on('error', (e) => setUpdate({ state: 'error', message: String(e?.message || e).slice(0, 160) }));
+  setTimeout(() => checkUpdates(false), 6000);
+  setInterval(() => checkUpdates(false), 6 * 60 * 60 * 1000);
+}
+function checkUpdates(manual) {
+  if (!autoUpdater) { if (manual) setUpdate({ state: 'dev', version: app.getVersion() }); return; }
+  autoUpdater.checkForUpdates().catch((e) => setUpdate({ state: 'error', message: String(e?.message || e).slice(0, 160) }));
 }
 
 // ---------- Spotify auth (PKCE, no client secret needed) ----------
@@ -276,6 +401,28 @@ ipcMain.handle('listImages', (_e, dir) => listImages(dir));
 ipcMain.handle('readImage', (_e, p, maxW) => readImage(p, maxW));
 ipcMain.handle('setOnTop', (_e, v) => { win.setAlwaysOnTop(!!v, 'floating'); return !!v; });
 ipcMain.handle('setFullscreen', (_e, v) => win.setFullScreen(!!v));
+ipcMain.handle('isFullscreen', () => win.isFullScreen());
+ipcMain.handle('minimize', () => win.minimize());
+ipcMain.handle('displays', () => displayList());
+ipcMain.handle('moveToDisplay', (_e, id, fs) => { store.displayId = id; saveStore(); return moveToDisplay(id, fs !== false); });
+ipcMain.handle('getPref', (_e, k) => store[k]);
+ipcMain.handle('setPref', (_e, k, v) => { if (['launchFullscreen'].includes(k)) { store[k] = v; saveStore(); } return true; });
+ipcMain.handle('appInfo', () => ({ version: app.getVersion(), platform: process.platform, packaged: app.isPackaged }));
+ipcMain.handle('updateStatus', () => updateState);
+ipcMain.handle('checkUpdates', () => { checkUpdates(true); return true; });
+ipcMain.handle('installUpdate', () => {
+  if (isMac) { shell.openExternal('https://github.com/Hire-in-Math/lyricwall/releases/latest/download/LyricWall-Mac.dmg'); return; }
+  if (autoUpdater && updateState.state === 'ready') autoUpdater.quitAndInstall(false, true);
+});
 
-app.whenReady().then(() => { loadStore(); setupAudioCapture(); createWindow(); });
-app.on('window-all-closed', () => app.quit());
+// One copy at a time: opening it again just focuses the existing window
+if (!app.requestSingleInstanceLock()) app.quit();
+else {
+  app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.show(); win.focus(); } });
+  app.whenReady().then(() => {
+    loadStore(); setupAudioCapture(); createWindow(); buildMenu(); watchDisplays(); initUpdates();
+    app.setAboutPanelOptions?.({ applicationName: 'LyricWall', applicationVersion: app.getVersion(), website: SITE });
+  });
+  app.on('activate', () => { if (!win) createWindow(); });
+  app.on('window-all-closed', () => app.quit());
+}

@@ -1,6 +1,6 @@
 {
   "name": "lyricwall",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "Spotify synced lyrics as animated chat bubbles, for your second monitor",
   "main": "main.js",
   "scripts": {
@@ -26,6 +26,12 @@
       "target": [
         {
           "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
           "arch": [
             "universal"
           ]
@@ -75,5 +81,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/Hire-in-Math/lyricwall.git"
+  },
+  "dependencies": {
+    "electron-updater": "^6.6.2"
   }
 }
