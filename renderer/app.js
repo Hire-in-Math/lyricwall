@@ -628,7 +628,18 @@ const DEMO = (() => {
   const qs = new URLSearchParams(location.search);
   for (const [k, v] of qs) if (k.includes('.')) sset(k, isNaN(+v) ? (v === 'true' ? true : v === 'false' ? false : v) : +v); // demo overrides
   setMode(qs.get('mode') || S.mode);
-  if (qs.has('embed')) document.body.classList.add('embed');
+  if (qs.has('embed')) {
+    document.body.classList.add('embed');
+    // the website's live demo switches looks by message, without reloading
+    window.addEventListener('message', (e) => {
+      const d = e.data;
+      if (!d || d.type !== 'lw-set' || typeof d.settings !== 'object') return;
+      for (const [k, v] of Object.entries(d.settings)) {
+        if (k === 'mode') setMode(v);
+        else if (/^(lights|lyrics|beat|bg)\.[a-zA-Z]+$/.test(k) && sget(k) !== v) sset(k, v);
+      }
+    });
+  }
   if (qs.has('setup')) showSetup();
   document.documentElement.style.setProperty('--lyricScale', S.lyrics.size);
   document.body.classList.toggle('no-art-lyrics', !S.lyrics.onArtModes);

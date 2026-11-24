@@ -9,12 +9,10 @@ const DL = {
 const ua = navigator.userAgent;
 const os = /Windows/i.test(ua) ? 'win' : /Mac/i.test(ua) ? 'mac' : null;
 const label = { mac: 'Download for Mac', win: 'Download for Windows' };
-const primary = document.querySelector('[data-dl="primary"]');
-const secondary = document.querySelector('[data-dl="secondary"]');
-if (primary && secondary) {
+{
   const first = os || 'mac', second = first === 'mac' ? 'win' : 'mac';
-  primary.textContent = label[first]; primary.href = DL[first];
-  secondary.textContent = label[second]; secondary.href = DL[second];
+  document.querySelectorAll('[data-dl^="primary"]').forEach((a) => { a.textContent = label[first]; a.href = DL[first]; });
+  document.querySelectorAll('[data-dl^="secondary"]').forEach((a) => { a.textContent = label[second]; a.href = DL[second]; });
 }
 document.querySelectorAll('[data-dl="mac"]').forEach((a) => (a.href = DL.mac));
 document.querySelectorAll('[data-dl="win"]').forEach((a) => (a.href = DL.win));
@@ -24,34 +22,6 @@ document.querySelectorAll('[data-dl]').forEach((a) => a.addEventListener('click'
   if (!document.body.classList.contains('home')) return;
   setTimeout(() => { location.href = 'setup.html#' + (a.href.includes('Mac') ? 'mac' : 'windows'); }, 900);
 }));
-
-// Headline reveals word by word, like the app's lyrics
-const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-document.querySelectorAll('[data-words]').forEach((h) => {
-  const words = h.textContent.trim().split(/\s+/);
-  h.textContent = '';
-  words.forEach((w, i) => {
-    const s = document.createElement('span');
-    s.className = 'wd'; s.textContent = w;
-    s.style.animationDelay = reduce ? '0s' : 300 + i * 260 + 'ms';
-    h.append(s, i < words.length - 1 ? ' ' : '');
-  });
-});
-
-// Scale the 1600x1000 app demo to fit the monitor
-const screen = document.getElementById('screen');
-const frame = document.getElementById('demo');
-if (screen && frame) {
-  const fit = () => { frame.style.transform = `scale(${screen.clientWidth / 1600})`; };
-  new ResizeObserver(fit).observe(screen); fit();
-
-  // Style switcher under the monitor
-  const tabs = document.querySelectorAll('[data-demo]');
-  tabs.forEach((b) => b.addEventListener('click', () => {
-    tabs.forEach((x) => x.setAttribute('aria-selected', x === b));
-    frame.src = `app/index.html?embed=1&t=5&lights.style=flow&lights.colors=rainbow&${b.dataset.demo}`;
-  }));
-}
 
 // Setup guide: Mac / Windows tabs
 const osTabs = document.querySelectorAll('[data-os]');
