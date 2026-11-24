@@ -1,0 +1,79 @@
+{
+  "name": "lyricwall",
+  "version": "1.0.0",
+  "description": "Spotify synced lyrics as animated chat bubbles, for your second monitor",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist:mac": "electron-builder --mac",
+    "dist:win": "electron-builder --win",
+    "sync-site": "node -e \"const fs=require('fs');fs.rmSync('site/app',{recursive:true,force:true});fs.cpSync('renderer','site/app',{recursive:true})\""
+  },
+  "build": {
+    "appId": "com.lyricwall.app",
+    "productName": "LyricWall",
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*"
+    ],
+    "directories": {
+      "buildResources": "build",
+      "output": "dist"
+    },
+    "icon": "build/icon.png",
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.music",
+      "artifactName": "LyricWall-Mac.${ext}",
+      "extendInfo": {
+        "NSAudioCaptureUsageDescription": "LyricWall listens to system audio so the visuals can pulse to the beat. Nothing is recorded or saved."
+      }
+    },
+    "dmg": {
+      "title": "LyricWall"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "LyricWall-Windows-Setup.${ext}",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "shortcutName": "LyricWall"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Hire-in-Math",
+      "repo": "lyricwall",
+      "releaseType": "release"
+    }
+  },
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^25.0.0"
+  },
+  "author": "Nihal Hiremath",
+  "homepage": "https://lyricwall-app.netlify.app",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hire-in-Math/lyricwall.git"
+  }
+}

@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Set up LyricWall</title>
+  <meta name="description" content="Install LyricWall on Mac or Windows and connect your Spotify account." />
+  <link rel="icon" href="assets/favicon.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="nav">
+    <a class="brand" href="./"><img src="assets/icon.png" alt="" width="28" height="28" />LyricWall</a>
+    <nav>
+      <a href="./">Home</a>
+      <a href="./#faq">FAQ</a>
+      <a class="repo-link" href="#" data-repo>GitHub</a>
+    </nav>
+  </header>
+
+  <main class="guide">
+    <h1>Set up LyricWall</h1>
+    <p class="lede">Install the app, connect Spotify once, and you're done. The whole thing takes about five minutes. You'll need a Spotify Premium account.</p>
+
+    <h2 id="install">Install the app</h2>
+    <div class="os-tabs" role="tablist" aria-label="Your computer">
+      <button role="tab" data-os="mac">Mac</button>
+      <button role="tab" data-os="win">Windows</button>
+    </div>
+
+    <section data-os-panel="mac" id="mac" aria-label="Install on Mac">
+      <ol class="gsteps">
+        <li>
+          <h3>Download LyricWall for Mac</h3>
+          <p>One download works on both Apple Silicon and Intel Macs running macOS 12 or newer.</p>
+          <div class="dl-row"><a class="bubble-btn sent" data-dl="mac" href="#">Download for Mac</a></div>
+        </li>
+        <li>
+          <h3>Drag it into Applications</h3>
+          <p>Open the downloaded <b>LyricWall-Mac.dmg</b> file and drag the LyricWall icon onto the Applications folder.</p>
+        </li>
+        <li>
+          <h3>Open it the first time</h3>
+          <p>Open LyricWall from Applications. Your Mac will say it couldn't verify the app, because LyricWall isn't signed with a paid Apple certificate. Click <b>Done</b>, then:</p>
+          <ul>
+            <li>Open <b>System Settings</b> and go to <b>Privacy &amp; Security</b>.</li>
+            <li>Scroll down to the message about LyricWall and click <b>Open Anyway</b>.</li>
+            <li>Enter your password, then click <b>Open</b>.</li>
+          </ul>
+          <p>You only have to do this once.</p>
+          <p class="note">If your Mac says LyricWall “is damaged and can't be opened,” open Terminal, paste this, press Return, and open the app again:</p>
+          <div class="copy"><code>xattr -cr /Applications/LyricWall.app</code><button data-copy="xattr -cr /Applications/LyricWall.app">Copy</button></div>
+        </li>
+        <li>
+          <h3>Allow system audio (for the beat)</h3>
+          <p>When your Mac asks to let LyricWall record system audio, click <b>Allow</b>. This lets the lights and artwork pulse to your music. Nothing is recorded or saved. If you skip it, LyricWall uses a steady pulse instead.</p>
+        </li>
+      </ol>
+    </section>
+
+    <section data-os-panel="win" id="windows" aria-label="Install on Windows" hidden>
+      <ol class="gsteps">
+        <li>
+          <h3>Download LyricWall for Windows</h3>
+          <p>Works on Windows 10 and 11.</p>
+          <div class="dl-row"><a class="bubble-btn sent" data-dl="win" href="#">Download for Windows</a></div>
+        </li>
+        <li>
+          <h3>Run the installer</h3>
+          <p>Open <b>LyricWall-Windows-Setup.exe</b> from your Downloads. Windows may show a blue box that says “Windows protected your PC,” because LyricWall is from a new developer. Click <b>More info</b>, then <b>Run anyway</b>.</p>
+        </li>
+        <li>
+          <h3>Open LyricWall</h3>
+          <p>It installs in a few seconds and opens by itself. Next time, open it from the Start menu or the desktop shortcut.</p>
+        </li>
+      </ol>
+    </section>
+
+    <h2 id="spotify">Connect Spotify</h2>
+    <p>Spotify only lets apps like LyricWall connect through a free developer app that you create yourself. It's quick, and you never have to touch it again.</p>
+    <ol class="gsteps">
+      <li>
+        <h3>Open the Spotify Developer Dashboard</h3>
+        <p>Go to <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a> and log in with the Spotify account you listen on. If it's your first time, accept the developer terms. Spotify may ask you to verify your email first.</p>
+      </li>
+      <li>
+        <h3>Create an app</h3>
+        <p>Click <b>Create app</b> and fill it in:</p>
+        <ul>
+          <li><b>App name</b> and <b>App description</b>: anything, like “LyricWall.”</li>
+          <li><b>Redirect URI</b>: paste the address below exactly, then click <b>Add</b>.</li>
+        </ul>
+        <div class="copy"><code>http://127.0.0.1:8888/callback</code><button data-copy="http://127.0.0.1:8888/callback">Copy</button></div>
+        <ul>
+          <li>Under “Which API/SDKs are you planning to use?”, tick <b>Web API</b>.</li>
+          <li>Agree to the terms and click <b>Save</b>.</li>
+        </ul>
+      </li>
+      <li>
+        <h3>Copy your Client ID</h3>
+        <p>On your new app's page, open <b>Settings</b> and copy the <b>Client ID</b>. It's a 32-character mix of letters and numbers. You don't need the Client Secret.</p>
+      </li>
+      <li>
+        <h3>Paste it into LyricWall</h3>
+        <p>Paste the Client ID into LyricWall's welcome screen and click <b>Connect Spotify</b>. A browser tab opens. Log in if asked, click <b>Agree</b>, then go back to LyricWall.</p>
+      </li>
+      <li>
+        <h3>Play a song</h3>
+        <p>Play anything on Spotify, on your computer, phone or speaker. LyricWall picks it up within a second or two.</p>
+      </li>
+    </ol>
+
+    <h2 id="use">Make it yours</h2>
+    <p>Drag the window to your second monitor and press <kbd>F</kbd> for fullscreen. Press <kbd>S</kbd> to open Settings, where you can change the lyric style, light effect and colors, background, beat sensitivity and more.</p>
+    <dl class="trouble">
+      <dt>Keyboard shortcuts</dt>
+      <dd><kbd>M</kbd> switches between Lyrics, Cover and Vinyl. <kbd>L</kbd> changes the lyric style, <kbd>E</kbd> the light effect and <kbd>C</kbd> the light colors. <kbd>Space</kbd> plays or pauses, the arrow keys skip, <kbd>T</kbd> keeps the window on top, and <kbd>[</kbd> <kbd>]</kbd> nudge the lyric timing.</dd>
+    </dl>
+
+    <h2 id="help">If something's not working</h2>
+    <dl class="trouble">
+      <dt>“INVALID_CLIENT: Invalid redirect URI”</dt>
+      <dd>The Redirect URI in your Spotify app doesn't match. Open your app's Settings on the Spotify dashboard, make sure it's exactly <code>http://127.0.0.1:8888/callback</code>, and click Save.</dd>
+      <dt>“User not registered in the Developer Dashboard”</dt>
+      <dd>You're using someone else's Client ID. Create your own app with the steps above. Each Spotify developer app only works for its owner and up to five people they add.</dd>
+      <dt>It says “Play something on Spotify” while music is playing</dt>
+      <dd>Make sure you're logged in to the same Spotify account you connected, and that Private Session is off. Then give it a few seconds.</dd>
+      <dt>Play, pause and skip don't work</dt>
+      <dd>These need Spotify Premium and an active device. Start playback in Spotify once, then try again.</dd>
+      <dt>The lights don't react to the beat</dt>
+      <dd>On a Mac, open System Settings, go to Privacy &amp; Security, then Screen &amp; System Audio Recording, and turn on LyricWall. Press <kbd>B</kbd> in the app to try again.</dd>
+      <dt>The lyrics are early or late</dt>
+      <dd>Press <kbd>[</kbd> or <kbd>]</kbd> to shift them by a quarter second, or use the timing slider in Settings.</dd>
+      <dt>Start over</dt>
+      <dd>In Settings, use Log out to reconnect Spotify, or Reset settings to go back to the defaults.</dd>
+    </dl>
+  </main>
+
+  <footer class="foot">
+    <p>Made by Nihal Hiremath. Not affiliated with Spotify.</p>
+    <p><a href="./">Home</a> <a href="#" data-repo>Source code</a></p>
+  </footer>
+
+  <script src="site.js"></script>
+</body>
+</html>

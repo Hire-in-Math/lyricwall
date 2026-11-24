@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LyricWall: Spotify lyrics that glow on your screen</title>
+  <meta name="description" content="LyricWall turns whatever you're playing on Spotify into synced, animated lyrics with RGB light around your screen. Free for Mac and Windows." />
+  <meta property="og:title" content="LyricWall" />
+  <meta property="og:description" content="Spotify lyrics that glow on your second monitor. Free for Mac and Windows." />
+  <meta property="og:image" content="https://lyricwall-app.netlify.app/assets/og.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="icon" href="assets/favicon.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="home">
+  <header class="nav">
+    <a class="brand" href="./"><img src="assets/icon.png" alt="" width="28" height="28" />LyricWall</a>
+    <nav>
+      <a href="setup.html">Setup guide</a>
+      <a href="#faq">FAQ</a>
+      <a class="repo-link" href="#" data-repo>GitHub</a>
+    </nav>
+  </header>
+
+  <!-- HERO: a dark room, one glowing monitor -->
+  <section class="room" aria-label="LyricWall running on a monitor">
+    <div class="wall-light" aria-hidden="true"></div>
+
+    <div class="hero-copy">
+      <h1 class="reveal" data-words>Your lyrics, glowing on the wall.</h1>
+      <p class="lede">LyricWall turns whatever you're playing on Spotify into synced, animated lyrics with RGB light around the edges of your screen. Leave it running on your second monitor while you work.</p>
+      <div class="cta">
+        <a class="bubble-btn sent" data-dl="primary" href="#download">Download for Mac</a>
+        <a class="bubble-btn received" data-dl="secondary" href="#download">Download for Windows</a>
+      </div>
+      <p class="fineprint">Free. Needs Spotify Premium. Setup takes about two minutes.</p>
+    </div>
+
+    <figure class="monitor-wrap">
+      <div class="monitor">
+        <div class="screen" id="screen">
+          <iframe id="demo" title="LyricWall live demo" src="app/index.html?embed=1&mode=lyrics&t=5&lyrics.style=chat&lights.colors=rainbow" loading="eager" tabindex="-1"></iframe>
+        </div>
+      </div>
+      <div class="stand" aria-hidden="true"></div>
+      <div class="desk" aria-hidden="true"></div>
+      <figcaption class="styles-bar" aria-label="Try a style">
+        <span class="styles-label">Try a style</span>
+        <div class="style-switch" role="tablist">
+          <button role="tab" aria-selected="true" data-demo="mode=lyrics&lyrics.style=chat">Messages</button>
+          <button role="tab" data-demo="mode=lyrics&lyrics.style=scroll">Scroll</button>
+          <button role="tab" data-demo="mode=lyrics&lyrics.style=focus&lights.style=chase">Karaoke</button>
+          <button role="tab" data-demo="mode=lyrics&lyrics.style=minimal&lights.style=spectrum&lights.colors=cyberpunk">Minimal</button>
+          <button role="tab" data-demo="mode=cover&lights.colors=album">Cover</button>
+          <button role="tab" data-demo="mode=vinyl&lights.colors=vaporwave">Vinyl</button>
+        </div>
+      </figcaption>
+    </figure>
+  </section>
+
+  <!-- WHAT IT DOES -->
+  <section class="features">
+    <h2>Made to sit on a screen all day</h2>
+    <div class="feature-list">
+      <article>
+        <h3>Lyrics, word by word</h3>
+        <p>Synced to the exact second of the song. Pick chat bubbles with photo cards from real cities, an Apple Music-style scroll, big karaoke lines or a single minimal line.</p>
+      </article>
+      <article>
+        <h3>RGB light around the edges</h3>
+        <p>Five effects: flow, chase, spectrum, breathe and static. Match the album art, your background or your own colors, and set the speed, glow and thickness.</p>
+      </article>
+      <article>
+        <h3>Moves with the beat</h3>
+        <p>LyricWall listens to your computer's sound and pulses the lights and artwork on every bass hit. Nothing is recorded.</p>
+      </article>
+      <article>
+        <h3>Cover and vinyl views</h3>
+        <p>Big album art or a spinning record over a background made from the cover's colors. Play, pause and skip right from the screen.</p>
+      </article>
+      <article>
+        <h3>Your backgrounds</h3>
+        <p>Use album colors, the blurred cover, one of your photos or a slideshow from a folder.</p>
+      </article>
+      <article>
+        <h3>Mac and Windows</h3>
+        <p>Runs in a window or fullscreen on any monitor. Keep it on top of other windows if you want it always in view.</p>
+      </article>
+    </div>
+  </section>
+
+  <!-- DOWNLOAD + STEPS -->
+  <section class="download" id="download">
+    <h2>Get it running in three steps</h2>
+    <ol class="steps">
+      <li>
+        <h3>Download and install</h3>
+        <p>Pick your computer below. The first time you open it, your computer will warn you that the app is from an unknown developer. The setup guide shows how to get past that in two clicks.</p>
+        <div class="dl-row">
+          <a class="bubble-btn sent" data-dl="mac" href="#">Download for Mac</a>
+          <a class="bubble-btn sent" data-dl="win" href="#">Download for Windows</a>
+        </div>
+        <p class="dl-meta" id="dlMeta">macOS 12 or newer (Apple Silicon and Intel). Windows 10 or 11.</p>
+      </li>
+      <li>
+        <h3>Make your Spotify key</h3>
+        <p>Spotify only lets apps like this connect through a free developer app that you create yourself on Spotify's site. It takes two minutes, and the app walks you through it on first launch.</p>
+      </li>
+      <li>
+        <h3>Paste it in and press play</h3>
+        <p>Paste your Client ID into LyricWall, log in to Spotify once, then play any song. Press F for fullscreen and S for settings.</p>
+      </li>
+    </ol>
+    <a class="guide-link" href="setup.html">Read the full setup guide</a>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq" id="faq">
+    <h2>Questions</h2>
+    <details>
+      <summary>Why do I need Spotify Premium?</summary>
+      <p>Since February 2026, Spotify requires Premium for any personal developer app, which is how LyricWall connects. It's Spotify's rule, not ours. LyricWall itself is free.</p>
+    </details>
+    <details>
+      <summary>Why do I have to make my own Spotify developer app?</summary>
+      <p>Spotify limits each developer app to five users. If everyone shared one, it would stop working after five people. Making your own takes two minutes and means it's yours alone.</p>
+    </details>
+    <details>
+      <summary>My Mac says the app "can't be opened" or "could not be verified."</summary>
+      <p>That's because LyricWall isn't signed with a paid Apple developer certificate. Open System Settings, go to Privacy &amp; Security, scroll down and click Open Anyway. You only do this once. <a href="setup.html#mac">Step-by-step help</a>.</p>
+    </details>
+    <details>
+      <summary>Windows says "Windows protected your PC."</summary>
+      <p>Click More info, then Run anyway. This shows up for apps from new developers. <a href="setup.html#windows">Step-by-step help</a>.</p>
+    </details>
+    <details>
+      <summary>Some songs don't show lyrics.</summary>
+      <p>Lyrics come from LRCLIB, a free community database. Most popular songs have synced lyrics. If a song only has plain lyrics, LyricWall spreads them across the song. If it has none, you'll see the album art and typing dots instead.</p>
+    </details>
+    <details>
+      <summary>Does it record my audio or collect data?</summary>
+      <p>No. Audio is only analysed live to find the beat, and your Spotify login stays on your computer. There are no accounts, ads or tracking.</p>
+    </details>
+    <details>
+      <summary>The lyrics are a little early or late.</summary>
+      <p>Press the [ and ] keys to nudge them by a quarter second, or use the timing slider in Settings.</p>
+    </details>
+  </section>
+
+  <footer class="foot">
+    <p>Made by Nihal Hiremath. Not affiliated with Spotify. Lyrics from LRCLIB, place photos from Wikimedia Commons.</p>
+    <p><a href="setup.html">Setup guide</a> <a href="#" data-repo>Source code</a></p>
+  </footer>
+
+  <script src="site.js"></script>
+</body>
+</html>

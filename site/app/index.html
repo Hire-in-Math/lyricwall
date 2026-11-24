@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https: data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'; media-src 'self' blob: mediastream:" />
+  <title>LyricWall</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="mode-lyrics">
+  <!-- Background -->
+  <div id="bg" class="bg"></div>
+  <div class="bg-dim"></div>
+  <div class="vignette"></div>
+  <div class="grain"></div>
+
+  <!-- RGB edge lights -->
+  <canvas id="lightsGlow" class="lights glow"></canvas>
+  <canvas id="lightsLine" class="lights line"></canvas>
+
+  <div class="drag-bar"></div>
+
+  <!-- Setup screen -->
+  <section id="setup" class="hidden">
+    <div class="setup-card">
+      <img class="setup-logo" src="icon.png" alt="" />
+      <h1>Welcome to LyricWall</h1>
+      <p id="setupMsg" class="setup-sub">Connect your Spotify in about 2 minutes. You only do this once.</p>
+      <div class="setup-note">Spotify requires <b>Spotify Premium</b> for apps like this, and each person makes their own free Spotify developer app.</div>
+      <ol class="setup-steps">
+        <li><b>Open the Spotify Developer Dashboard</b> and log in with your Spotify account.
+          <button class="mini" data-open="https://developer.spotify.com/dashboard">Open dashboard ↗</button></li>
+        <li><b>Click “Create app.”</b> Name and description can be anything (e.g. “LyricWall”).</li>
+        <li><b>Paste this as the Redirect URI</b>, then click Add:
+          <span class="copy-row"><code id="redir">http://127.0.0.1:8888/callback</code><button class="mini" id="copyRedir">Copy</button></span></li>
+        <li><b>Tick “Web API”</b>, agree to the terms, and click Save.</li>
+        <li><b>Copy the Client ID</b> from your app’s page and paste it here:</li>
+      </ol>
+      <input id="clientId" placeholder="Paste your Client ID" spellcheck="false" />
+      <button id="connect">Connect Spotify</button>
+      <p id="setupErr" class="err"></p>
+      <button class="link" data-open="https://lyricwall-app.netlify.app/setup.html">Need help? Open the full setup guide ↗</button>
+    </div>
+  </section>
+
+  <main id="stage">
+    <div class="view view-lyrics"><div id="lyrics" class="lyrics"></div></div>
+
+    <div class="view view-cover">
+      <div class="art-stack pulse"><img class="cover-img art-src" alt="" /></div>
+    </div>
+
+    <div class="view view-vinyl">
+      <div class="art-stack round pulse">
+        <div id="record" class="record">
+          <img class="label art-src" alt="" />
+          <div class="spindle"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="idle" class="idle hidden">
+      <div class="dots"><span></span><span></span><span></span></div>
+      <p>Play something on Spotify</p>
+    </div>
+
+    <div id="player" class="player hidden">
+      <img class="p-art art-src" alt="" />
+      <div class="p-main">
+        <div class="p-text">
+          <div id="title" class="p-title"></div>
+          <div id="artist" class="p-artist"></div>
+        </div>
+        <div class="p-progress">
+          <span id="tCur">0:00</span>
+          <div class="bar"><div id="barFill"></div></div>
+          <span id="tDur">0:00</span>
+        </div>
+      </div>
+      <div class="controls">
+        <button data-act="previous" title="Previous"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+        <button id="playBtn" data-act="toggle" class="play" title="Play/Pause">
+          <svg id="icoPlay" viewBox="0 0 24 24" class="hidden"><path d="M7 4v16l13-8z"/></svg>
+          <svg id="icoPause" viewBox="0 0 24 24"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
+        </button>
+        <button data-act="next" title="Next"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+      </div>
+      <div id="artLyric" class="art-lyric"></div>
+    </div>
+
+    <nav id="modes" class="modes">
+      <button data-mode="lyrics">Lyrics</button>
+      <button data-mode="cover">Cover</button>
+      <button data-mode="vinyl">Vinyl</button>
+      <span class="sep"></span>
+      <button id="beatBtn" title="React to the music's beat">♪ Beat</button>
+      <button id="gear" class="gear" title="Settings (S)">
+        <svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7zm7.4-2.5a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.4-2.5 1a7.4 7.4 0 0 0-1.7-1l-.4-2.6h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.4L4.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.4 2.5-1c.5.4 1.1.7 1.7 1l.4 2.6h4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.4z"/></svg>
+      </button>
+    </nav>
+
+    <div class="hint">S settings · M mode · L lyric style · E light effect · C light colors · Space play/pause · ← → skip · F fullscreen</div>
+    <div id="toast" class="toast"></div>
+  </main>
+
+  <!-- Settings drawer -->
+  <aside id="settings" class="settings">
+    <header><h2>Settings</h2><button id="settingsClose" class="x">×</button></header>
+    <div id="settingsBody" class="settings-body"></div>
+  </aside>
+
+  <script src="settings.js"></script>
+  <script src="lights.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
