@@ -1,6 +1,6 @@
 {
   "name": "lyricwall",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Spotify synced lyrics as animated chat bubbles, for your second monitor",
   "main": "main.js",
   "scripts": {

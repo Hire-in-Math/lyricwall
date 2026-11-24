@@ -72,36 +72,74 @@ function hslToRgb(h, s, l) {
   return [r, g, b].map((v) => Math.round((v + m) * 255));
 }
 // Returns hue clusters [h, s, l, weight] sorted by weight (circular hue mean per bin).
-function hueClusters(img) {
-  const N = 48, c = document.createElement('canvas'); c.width = c.height = N;
+// Groups the cover's pixels into its main colors (k-means), biggest first: [{ rgb, share, h, s, l, chroma }]
+function colorClusters(img, k = 7) {
+  const N = 64, c = document.createElement('canvas'); c.width = c.height = N;
   const ctx = c.getContext('2d', { willReadFrequently: true }); ctx.drawImage(img, 0, 0, N, N);
   const d = ctx.getImageData(0, 0, N, N).data;
-  const bins = new Map();
-  for (let i = 0; i < d.length; i += 4) {
-    const [h, s, l] = rgbToHsl(d[i], d[i + 1], d[i + 2]);
-    if (l < 0.06 || l > 0.96) continue;
-    const key = s < 0.12 ? 'gray' : Math.floor(h / 24) % 15;
-    const b = bins.get(key) || { n: 0, w: 0, x: 0, y: 0, s: 0, l: 0, gray: key === 'gray' };
-    const w = 0.25 + s, rad = (h * Math.PI) / 180;
-    b.n++; b.w += w; b.x += Math.cos(rad) * w; b.y += Math.sin(rad) * w; b.s += s * w; b.l += l * w;
-    bins.set(key, b);
+  const px = [];
+  for (let i = 0; i < d.length; i += 4) if (d[i + 3] > 128) px.push([d[i], d[i + 1], d[i + 2]]);
+  if (!px.length) return [];
+  const dist = (a, b) => { const rm = (a[0] + b[0]) / 2, dr = a[0] - b[0], dg = a[1] - b[1], db = a[2] - b[2]; return (2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db; };
+  // farthest-point start (deterministic), then refine
+  const cent = [px.reduce((m, p) => [m[0] + p[0] / px.length, m[1] + p[1] / px.length, m[2] + p[2] / px.length], [0, 0, 0])];
+  const near = px.map((p) => dist(p, cent[0]));
+  while (cent.length < k) {
+    let bi = 0; for (let i = 1; i < px.length; i++) if (near[i] > near[bi]) bi = i;
+    if (near[bi] < 300) break; // no more distinct colors
+    cent.push([...px[bi]]); for (let i = 0; i < px.length; i++) near[i] = Math.min(near[i], dist(px[i], px[bi]));
   }
-  return [...bins.values()].filter((b) => b.n > 10).sort((a, b) => b.w - a.w)
-    .map((b) => [(Math.atan2(b.y, b.x) * 180) / Math.PI, b.s / b.w, b.l / b.w, b.w, b.gray]);
+  let lab = new Array(px.length).fill(0);
+  for (let it = 0; it < 10; it++) {
+    const sum = cent.map(() => [0, 0, 0, 0]);
+    px.forEach((p, i) => { let bj = 0, bd = Infinity; cent.forEach((cc, j) => { const dd = dist(p, cc); if (dd < bd) { bd = dd; bj = j; } }); lab[i] = bj; const t = sum[bj]; t[0] += p[0]; t[1] += p[1]; t[2] += p[2]; t[3]++; });
+    sum.forEach((t, j) => { if (t[3]) cent[j] = [t[0] / t[3], t[1] / t[3], t[2] / t[3]]; });
+  }
+  const counts = cent.map(() => 0); lab.forEach((j) => counts[j]++);
+  return cent.map((cc, j) => {
+    const rgb = cc.map(Math.round); const [h, s, l] = rgbToHsl(...rgb);
+    return { rgb, share: counts[j] / px.length, h, s, l, chroma: (1 - Math.abs(2 * l - 1)) * s };
+  }).filter((x) => x.share > 0).sort((a, b) => b.share - a.share);
 }
-// dark, rich colors for backgrounds
+const toHex = (c) => '#' + c.map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+
+// Dark, rich versions of the cover's biggest colors, for the background
 function bgPalette(img) {
-  const cols = hueClusters(img);
-  while (cols.length < 3) cols.push(cols[0] ? [cols[0][0] + 25 * cols.length, cols[0][1], cols[0][2] * 0.7] : [300, 0.5, 0.3]);
-  return cols.slice(0, 3).map(([h, s, l], i) => hslToRgb(h, Math.min(0.85, s * 1.15), Math.min(0.42 - i * 0.06, Math.max(0.16, l * 0.75))));
+  const cl = colorClusters(img);
+  const top = cl.slice(0, 3);
+  while (top.length < 3) top.push(top[top.length - 1] || { h: 300, s: 0.5, l: 0.3 });
+  return top.map((c, i) => hslToRgb(c.h, Math.min(0.85, c.s * 1.1), Math.min(0.42 - i * 0.06, Math.max(0.14, c.l * 0.8))));
 }
-// bright, saturated colors for the lights
+
+// Light colors that match the cover: each color gets a share of the screen edge based on how much
+// of the cover it fills (and how colorful it is). Black/white/gray covers get a soft tinted white.
 function vividPalette(img) {
-  const cols = hueClusters(img).filter((c) => !c[4]);
-  if (!cols.length) return ['#ffffff', '#9a9aa0'];
-  const out = cols.slice(0, 5).map(([h, s]) => hslToRgb(h, Math.max(0.75, Math.min(1, s * 1.3)), 0.58));
-  if (out.length === 1) out.push(hslToRgb(cols[0][0] + 35, 0.9, 0.62));
-  return out.map((c) => '#' + c.map((v) => v.toString(16).padStart(2, '0')).join(''));
+  const cl = colorClusters(img);
+  if (!cl.length) return ['#ffffff'];
+  // merge clusters that are basically the same hue
+  const colorful = [];
+  for (const c of cl.filter((x) => x.chroma >= 0.09 && x.share >= 0.012)) {
+    const m = colorful.find((o) => Math.min(Math.abs(o.h - c.h), 360 - Math.abs(o.h - c.h)) < 18 && Math.abs(o.l - c.l) < 0.25);
+    if (m) { const w = m.share + c.share; m.s = (m.s * m.share + c.s * c.share) / w; m.l = (m.l * m.share + c.l * c.share) / w; m.chroma = Math.max(m.chroma, c.chroma); m.share = w; }
+    else colorful.push({ ...c });
+  }
+  if (!colorful.length) {
+    // neutral cover: white light, tinted by its faint color if it has one
+    const tint = cl.slice().sort((a, b) => b.s - a.s)[0];
+    const sat = tint.s > 0.06 ? 0.3 : 0;
+    return [...Array(8).fill(toHex(hslToRgb(tint.h, sat, 0.86))), ...Array(4).fill(toHex(hslToRgb(tint.h, sat * 0.8, 0.62)))];
+  }
+  const imp = colorful.map((c) => ({ c, w: c.share * (0.35 + c.chroma) })).sort((a, b) => b.w - a.w).slice(0, 5);
+  const total = imp.reduce((n, x) => n + x.w, 0);
+  // light version of each color: keep its hue and character, just make it glow
+  const glow = (c) => hslToRgb(c.h, Math.min(1, Math.max(0.55, c.s * 1.25)), Math.min(0.68, Math.max(0.5, c.l < 0.5 ? 0.5 + c.l * 0.15 : c.l)));
+  const SLOTS = 12; const out = [];
+  const counts = imp.map(({ w }) => Math.max(1, Math.round((SLOTS * w) / total)));
+  // always exactly SLOTS colors so the lights can fade smoothly from one song to the next
+  while (counts.reduce((a, b) => a + b, 0) > SLOTS) counts[counts.indexOf(Math.max(...counts))]--;
+  while (counts.reduce((a, b) => a + b, 0) < SLOTS) counts[0]++;
+  imp.forEach(({ c }, i) => { for (let k = 0; k < counts[i]; k++) out.push(toHex(glow(c))); });
+  return out;
 }
 
 function resolveLightColors(src = S.lights.colors) {
