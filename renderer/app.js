@@ -55,7 +55,9 @@ function currentPosition() {
   const drift = tr.playing ? Date.now() - tr.fetchedAt : 0;
   return Math.min(tr.progressMs + drift, tr.durationMs);
 }
-const lyricPos = () => currentPosition() + S.offsetMs;
+const songOffsets = (() => { try { return JSON.parse(localStorage.getItem('lw-song-offsets') || '{}'); } catch { return {}; } })();
+const songOffset = () => (state.track && songOffsets[state.track.id]) || 0;
+const lyricPos = () => currentPosition() + S.offsetMs + songOffset();
 
 // ---------- colors ----------
 function rgbToHsl(r, g, b) {
@@ -456,6 +458,8 @@ function tick() {
 // ---------- track handling ----------
 async function onNewTrack(tr) {
   state.track = tr; state.lines = []; state.idx = -2;
+  if (state.tempMode) { state.tempMode = null; showModeClasses(S.mode); }   // back to the user's mode after a no-lyrics song
+  if (document.body.classList.contains('settings-open')) setTimeout(renderSettings, 1500);
   $('idle').classList.add('hidden');
   $('player').classList.remove('hidden');
   $('title').textContent = tr.title; $('artist').textContent = tr.artist;
@@ -488,7 +492,8 @@ async function onNewTrack(tr) {
     toast('No synced lyrics — approximate timing');
   } else {
     state.lines = [{ t: 0, text: lyr.instrumental ? '♪ instrumental ♪' : '♪' }];
-    if (!lyr.instrumental) toast('No lyrics found for this one');
+    if (S.lyrics.noLyrics === 'cover' && S.mode === 'lyrics') { state.tempMode = 'cover'; showModeClasses('cover'); toast(lyr.instrumental ? 'Instrumental: showing the cover' : 'No lyrics for this one: showing the cover'); }
+    else if (!lyr.instrumental) toast('No lyrics found for this one');
   }
   await decideVibe(tr);
   if (state.track !== tr) return;
@@ -511,27 +516,58 @@ async function poll() {
   if (state.polling) return; state.polling = true;
   try {
     const np = api ? await api.nowPlaying() : DEMO.nowPlaying();
-    if (np.error === 'auth') return showSetup();
+    if (np.error === 'auth') { showSetup(); $('setupMsg').textContent = 'Spotify needs you to connect again. Your settings are kept.'; return; }
+    setConnection(np.error);
     if (np.error) return;
-    if (np.idle) {
-      state.track = null; state.lines = []; $('lyrics').innerHTML = ''; $('artLyric').innerHTML = '';
-      $('player').classList.add('hidden'); $('idle').classList.remove('hidden');
-      return;
-    }
+    state.device = np.device || null;
+    if (np.idle) { showIdle(np.reason); return; }
+    document.body.classList.remove('is-idle');
     if (!state.track || state.track.id !== np.id) await onNewTrack(np);
     else if (Date.now() > state.holdUntil) {
       Object.assign(state.track, { progressMs: np.progressMs, playing: np.playing, fetchedAt: np.fetchedAt });
       updatePlayingUI();
     }
+    if (state.track && np.device) {
+      $('device').textContent = np.device.name ? 'on ' + np.device.name : '';
+    }
   } finally { state.polling = false; }
+}
+
+// ---------- idle screen + connection ----------
+function showIdle(reason) {
+  if (state.track) { state.track = null; state.lines = []; $('lyrics').innerHTML = ''; $('artLyric').innerHTML = ''; }
+  document.body.classList.add('is-idle');
+  $('player').classList.add('hidden'); $('idle').classList.remove('hidden');
+  $('idleText').textContent = {
+    podcast: 'Podcasts don\'t have lyrics. Play a song to bring the wall back.',
+    ad: 'Ad break. The lyrics are back after it.',
+  }[reason] || 'Play something on Spotify';
+  updateClock();
+}
+function updateClock() {
+  const d = new Date();
+  $('idleClock').textContent = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  $('idleDate').textContent = d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+}
+setInterval(() => { if (document.body.classList.contains('is-idle')) updateClock(); }, 10000);
+let connWarned = null;
+function setConnection(err) {
+  const msg = err === 'offline' ? 'Can\'t reach Spotify. Retrying…' : err === 'ratelimit' ? 'Spotify asked LyricWall to slow down. Back in a few seconds.' : null;
+  if (msg && connWarned !== err) toast(msg);
+  connWarned = msg ? err : null;
+  document.body.classList.toggle('is-offline', err === 'offline');
 }
 
 // ---------- modes ----------
 const MODES = ['lyrics', 'cover', 'vinyl'];
-function setMode(m) {
-  if (!MODES.includes(m)) m = 'lyrics';
+function showModeClasses(m) {
   MODES.forEach((x) => document.body.classList.toggle('mode-' + x, x === m));
   document.querySelectorAll('[data-mode]').forEach((b) => b.classList.toggle('active', b.dataset.mode === m));
+}
+function setMode(m) {
+  if (!MODES.includes(m)) m = 'lyrics';
+  state.tempMode = null;
+  showModeClasses(m);
   sset('mode', m);
 }
 function cycleMode() {
@@ -549,20 +585,37 @@ function updatePlayingUI() {
   $('icoPause').classList.toggle('hidden', !playing);
   $('record').classList.toggle('spinning', playing);
 }
-async function control(act) {
+async function control(act, arg) {
   const tr = state.track;
   if (!tr) return;
   if (act === 'toggle') act = tr.playing ? 'pause' : 'play';
+  if (act === 'seek') { tr.progressMs = arg; tr.fetchedAt = Date.now(); state.holdUntil = Date.now() + 1500; state.idx = -2; }
+  if (act === 'volume') {
+    if (!state.device) return toast('No active Spotify device');
+    if (state.device.canVolume === false) return toast('This device doesn\'t allow volume control');
+    arg = Math.max(0, Math.min(100, arg)); state.device.volume = arg; toast(`Volume ${arg}%`);
+  }
   if (act === 'play' || act === 'pause') {
     tr.progressMs = currentPosition(); tr.fetchedAt = Date.now(); tr.playing = act === 'play';
     state.holdUntil = Date.now() + 1500; updatePlayingUI();
   }
   if (!api) { if (act === 'next' || act === 'previous') toast('Demo mode'); return; }
-  const r = await api.control(act);
+  const r = await api.control(act, arg);
   if (!r.ok) { toast(r.error); state.holdUntil = 0; }
   setTimeout(poll, 450);
 }
 document.querySelectorAll('[data-act]').forEach((b) => (b.onclick = () => control(b.dataset.act)));
+
+// click or drag the progress bar to jump in the song
+{
+  const bar = document.querySelector('.p-progress .bar');
+  let dragging = false;
+  const at = (e) => { const r = bar.getBoundingClientRect(); return Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)); };
+  const preview = (e) => { if (state.track) $('barFill').style.width = at(e) * 100 + '%'; };
+  bar.addEventListener('pointerdown', (e) => { if (!state.track) return; dragging = true; bar.setPointerCapture(e.pointerId); preview(e); });
+  bar.addEventListener('pointermove', (e) => { if (dragging) preview(e); });
+  bar.addEventListener('pointerup', (e) => { if (!dragging) return; dragging = false; control('seek', at(e) * state.track.durationMs); });
+}
 
 // ---------- beat engine ----------
 const beat = { analyser: null, data: null, stream: null, ctx: null, hist: [], pulse: 0, last: 0, value: 0 };
@@ -630,6 +683,7 @@ window.onSetting = (key, v) => {
   if (key === 'lyrics.cardFolder') state.cardFolderList = [];
   if (key === 'lyrics.font') applyLyricFont();
   if (key === 'window.launchFullscreen') api?.setPref('launchFullscreen', v);
+  if (key === 'window.openAtLogin') api?.loginItem(!!v);
   if (key === 'lyrics.size') document.documentElement.style.setProperty('--lyricScale', v);
   if (key === 'lyrics.onArtModes') document.body.classList.toggle('no-art-lyrics', !v);
   if (key.startsWith('player.')) applyPlayerPrefs();
@@ -670,8 +724,13 @@ $('copyRedir').onclick = async () => { try { await navigator.clipboard.writeText
 
 // ---------- keys ----------
 window.addEventListener('keydown', async (e) => {
-  if (e.target.tagName === 'INPUT') return;
+  const tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;   // typing / choosing in settings
+  if (tag === 'BUTTON' && (e.key === ' ' || e.key === 'Enter')) return;      // let the focused button handle it
+  if (e.metaKey || e.ctrlKey || e.altKey) return;                           // leave menu shortcuts alone
   const k = e.key.toLowerCase();
+  if (k === '?' || (k === '/' && e.shiftKey)) { toggleHelp(); return; }
+  if (k === 'arrowup' || k === 'arrowdown') { e.preventDefault(); control('volume', (state.device?.volume ?? 50) + (k === 'arrowup' ? 10 : -10)); return; }
   if (k === 'escape') {
     if (document.body.classList.contains('settings-open')) openSettings(false);
     else if (api && (await api.isFullscreen())) api.setFullscreen(false);
@@ -688,9 +747,24 @@ window.addEventListener('keydown', async (e) => {
   if (k === 'f' && api) api.toggleFullscreen();
   if (k === 't') { sset('window.onTop', !S.window.onTop); toast('Always on top: ' + (S.window.onTop ? 'ON' : 'OFF')); }
   if (k === 'q' && api && !e.metaKey) api.quit();
-  if (k === '[' || k === ']') { sset('offsetMs', S.offsetMs + (k === ']' ? 250 : -250)); toast(`Lyric offset ${S.offsetMs > 0 ? '+' : ''}${(S.offsetMs / 1000).toFixed(2)}s`); }
+  if ((k === '[' || k === ']') && state.track) {
+    // timing is remembered per song
+    const id = state.track.id; songOffsets[id] = (songOffsets[id] || 0) + (k === ']' ? 250 : -250);
+    if (!songOffsets[id]) delete songOffsets[id];
+    try { localStorage.setItem('lw-song-offsets', JSON.stringify(songOffsets)); } catch {}
+    const v = songOffsets[id] || 0; toast(`Timing for this song ${v > 0 ? '+' : ''}${(v / 1000).toFixed(2)}s`);
+  }
+  if (k === 'escape' && $('help').classList.contains('show')) toggleHelp(false);
   if (document.body.classList.contains('settings-open')) renderSettings();
 });
+
+function toggleHelp(show) {
+  const h = $('help'); const v = show ?? !h.classList.contains('show');
+  h.classList.toggle('show', v);
+  if (v && window.anime) anime.animate('#help .help-card', { opacity: [0, 1], scale: [0.95, 1], duration: 400, ease: 'outExpo' });
+}
+$('help').addEventListener('click', (e) => { if (e.target.id === 'help') toggleHelp(false); });
+$('helpBtn').onclick = () => toggleHelp();
 
 function nextStyle(dir = 1) {
   const keys = ['auto', ...STYLE_LIST.map((x) => x[0]).filter((k) => k !== 'auto')];

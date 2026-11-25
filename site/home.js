@@ -6,24 +6,38 @@
   const $$ = (s) => [...document.querySelectorAll(s)];
   const frame = $('#demo');
 
-  // ---------- Live demo: tell the app on the monitor which look to show ----------
+  // ---------- Lyric styles: click a button to show it on the monitor ----------
   const LOOKS = {
-    chat:   { mode: 'lyrics', 'lyrics.style': 'chat',    'lights.style': 'flow',     'lights.colors': 'rainbow' },
-    scroll: { mode: 'lyrics', 'lyrics.style': 'scroll',  'lights.style': 'flow',     'lights.colors': 'album' },
-    focus:  { mode: 'lyrics', 'lyrics.style': 'focus',   'lights.style': 'chase',    'lights.colors': 'cyberpunk' },
-    cover:  { mode: 'cover',  'lyrics.style': 'chat',    'lights.style': 'spectrum', 'lights.colors': 'album' },
-    vinyl:  { mode: 'vinyl',  'lyrics.style': 'chat',    'lights.style': 'flow',     'lights.colors': 'vaporwave' },
+    chat:      { mode: 'lyrics', 'lyrics.style': 'chat',      'lights.style': 'flow',     'lights.colors': 'rainbow',   d: 'Lyrics arrive as chat bubbles, with photo cards from real places.' },
+    focus:     { mode: 'lyrics', 'lyrics.style': 'focus',     'lights.style': 'chase',    'lights.colors': 'cyberpunk', d: 'Big karaoke lines that fill in word by word.' },
+    kinetic:   { mode: 'lyrics', 'lyrics.style': 'kinetic',   'lights.style': 'spectrum', 'lights.colors': 'album',     d: 'Words punch, slide and spin in like a music video.' },
+    neon:      { mode: 'lyrics', 'lyrics.style': 'neon',      'lights.style': 'breathe',  'lights.colors': 'vaporwave', d: 'A neon tube sign on a brick wall that lights up as each word is sung.' },
+    tunnel:    { mode: 'lyrics', 'lyrics.style': 'tunnel',    'lights.style': 'flow',     'lights.colors': 'cyberpunk', d: 'Lines fly out of the distance through glowing rings and rush past you.' },
+    spotlight: { mode: 'lyrics', 'lyrics.style': 'spotlight', 'lights.style': 'flow',     'lights.colors': 'album',     d: 'A dark wall of lyrics, lit by an orb of light that follows the singer.' },
+    ink:       { mode: 'lyrics', 'lyrics.style': 'ink',       'lights.style': 'breathe',  'lights.colors': 'sunset',    d: 'Crisp words that melt into colored smoke when the line ends.' },
+    cover:     { mode: 'cover',  'lyrics.style': 'chat',      'lights.style': 'spectrum', 'lights.colors': 'album',     d: 'Big album art over a background made from its colors, pulsing to the beat.' },
+    vinyl:     { mode: 'vinyl',  'lyrics.style': 'chat',      'lights.style': 'flow',     'lights.colors': 'vaporwave', d: 'A record that spins while the song plays and stops when you pause.' },
   };
-  const WALL = { chat: 'chat', scroll: 'scroll', focus: 'focus', cover: 'cover', vinyl: 'vinyl' };
   let current = 'chat';
   function setLook(name) {
-    if (!LOOKS[name]) return;
+    const look = LOOKS[name]; if (!look) return;
     current = name;
-    frame?.contentWindow?.postMessage({ type: 'lw-set', settings: LOOKS[name] }, '*');
-    document.body.dataset.look = WALL[name];
-    $$('.progress-dots span').forEach((d, i) => d.classList.toggle('on', i === Object.keys(LOOKS).indexOf(name)));
+    const { d, ...settings } = look;
+    frame?.contentWindow?.postMessage({ type: 'lw-set', settings }, '*');
+    document.body.dataset.look = name;
+    const desc = $('#lookDesc'); if (desc) desc.textContent = d;
   }
   frame?.addEventListener('load', () => setLook(current));
+  setLook('chat');
+  const lookBtns = $$('.looks button');
+  lookBtns.forEach((b) => b.addEventListener('click', () => {
+    lookBtns.forEach((x) => x.setAttribute('aria-checked', x === b));
+    setLook(b.dataset.look);
+    if (!reduce) {
+      animate(b, { scale: [0.9, 1], duration: 500, ease: 'outElastic(1, .5)' });
+      animate('.styles-sec .monitor', { scale: [0.985, 1], duration: 600, ease: 'outElastic(1, .6)' });
+    }
+  }));
 
   // Scale the 1600x1000 app to fit each screen
   $$('.screen').forEach((scr) => {
@@ -45,7 +59,7 @@
   const lightState = { 'lights.style': 'flow', 'lights.colors': 'rainbow' };
   const sendLights = () => lightsFrame?.contentWindow?.postMessage({ type: 'lw-set', settings: lightState }, '*');
   lightsFrame?.addEventListener('load', sendLights);
-  $$('.chips').forEach((group) => {
+  $$('.chips[data-key]').forEach((group) => {
     const key = group.dataset.key;
     const btns = [...group.querySelectorAll('button')];
     btns.forEach((b) => b.addEventListener('click', () => {
@@ -73,10 +87,7 @@
   if (eq) eq.innerHTML = Array.from({ length: 64 }, () => '<span></span>').join('');
 
   if (reduce) {
-    // No motion: show everything in its final state and switch looks by scroll position only.
-    const chapters = $$('.chapter');
-    const io = new IntersectionObserver((entries) => entries.forEach((e) => e.isIntersecting && setLook(e.target.dataset.mode)), { threshold: 0.6 });
-    chapters.forEach((c) => io.observe(c));
+    // No motion: everything is shown in its final state.
   } else {
 
     // ---------- 1. Intro: the logo draws itself ----------
@@ -106,29 +117,12 @@
       autoplay: onScroll({ target: '.intro', enter: 'start start', leave: 'start end', sync: true }),
     });
 
-    // ---------- 2. Story: the monitor scenes, pinned while you scroll ----------
-    const chapters = $$('.chapter');
-    const story = createTimeline({
-      defaults: { ease: 'inOutQuad' },
-      autoplay: onScroll({
-        target: '.story', enter: 'start start', leave: 'end end', sync: true,
-        onUpdate: (self) => {
-          const i = Math.min(chapters.length - 1, Math.floor(self.progress * chapters.length * 0.999));
-          const name = chapters[Math.max(0, i)].dataset.mode;
-          if (name !== current) setLook(name);
-        },
-      }),
-    });
-    story
-      .add('.screen-off', { opacity: [1, 0], duration: 250 }, 0)
-      .add('.monitor-wrap', { scale: [0.88, 1], duration: 300 }, 0)
-      .add('.wall-light', { opacity: [0, 0.6], scale: [0.6, 1], duration: 400 }, 0);
-    chapters.forEach((c, i) => {
-      const start = i * 1000;
-      story.add(c, { opacity: [0, 1], y: [50, 0], filter: ['blur(10px)', 'blur(0px)'], duration: 260 }, start + (i === 0 ? 60 : 0));
-      if (i < chapters.length - 1) story.add(c, { opacity: [1, 0], y: [0, -50], filter: ['blur(0px)', 'blur(10px)'], duration: 260 }, start + 740);
-    });
-    story.add('.story-pin', { opacity: [1, 1], duration: 1 }, chapters.length * 1000); // keeps the last chapter on screen to the end
+    // ---------- 2. Styles: the monitor powers on as it scrolls into view ----------
+    createTimeline({ autoplay: onScroll({ target: '.styles-sec', enter: '80% start' }) })
+      .add('.styles-sec .monitor-wrap', { opacity: [0, 1], scale: [0.9, 1], y: [40, 0], duration: 1100, ease: 'outExpo' }, 0)
+      .add('.styles-sec .wall-light', { opacity: [0, 0.6], scale: [0.6, 1], duration: 1400, ease: 'outQuad' }, 200)
+      .add('.looks button', { opacity: [0, 1], y: [20, 0], scale: [0.8, 1], delay: stagger(45), duration: 700, ease: 'outBack(1.6)' }, 150)
+      .add(['.styles-copy', '.look-desc', '.more-styles'], { opacity: [0, 1], y: [16, 0], delay: stagger(90), duration: 800, ease: 'outExpo' }, 250);
 
     // ---------- 3. Lights ----------
     createTimeline({ autoplay: onScroll({ target: '.lights', enter: 'end start', leave: 'center center', sync: true }) })
@@ -143,7 +137,7 @@
       autoplay: onScroll({ target: '#eq' }),
     });
 
-    animate('.chips button', {
+    animate('.chips[data-key] button', {
       opacity: [0, 1], y: [20, 0], scale: [0.8, 1], delay: stagger(50), duration: 700, ease: 'outBack(1.6)',
       autoplay: onScroll({ target: '.picker', enter: '90% start' }),
     });

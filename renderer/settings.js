@@ -19,9 +19,9 @@ const DEFAULTS = {
   },
   beat: { enabled: true, sensitivity: 0.5, pulseArt: true },
   bg: { source: 'album', imagePath: '', folderPath: '', slideSec: 30, blur: 0.25, dim: 0.35, grain: true },
-  lyrics: { style: 'auto', font: 'auto', wordByWord: true, emphasis: true, icons: true, size: 1, cardPhotos: 'places', cardFolder: '', onArtModes: true, cardEvery: 4 },
+  lyrics: { style: 'auto', noLyrics: 'cover', font: 'auto', wordByWord: true, emphasis: true, icons: true, size: 1, cardPhotos: 'places', cardFolder: '', onArtModes: true, cardEvery: 4 },
   player: { show: true, autoHide: false },
-  window: { onTop: false, launchFullscreen: false },
+  window: { onTop: false, launchFullscreen: false, openAtLogin: false },
   offsetMs: 0,
 };
 
@@ -86,7 +86,8 @@ const SCHEMA = [
     { key: 'lyrics.cardFolder', label: 'Photo folder', type: 'folder', when: () => ['chat', 'polaroid'].includes(effStyle()) && S.lyrics.cardPhotos === 'folder' },
     { key: 'lyrics.cardEvery', label: 'Card every', type: 'range', min: 2, max: 8, step: 1, fmt: (v) => v + ' lines', when: () => effStyle() === 'chat' && S.lyrics.cardPhotos !== 'off' },
     { key: 'lyrics.onArtModes', label: 'Lyrics in Cover & Vinyl', type: 'toggle' },
-    { key: 'offsetMs', label: 'Timing offset', type: 'range', min: -3000, max: 3000, step: 50, fmt: (v) => (v > 0 ? '+' : '') + (v / 1000).toFixed(2) + 's' },
+    { key: 'lyrics.noLyrics', label: 'Songs without lyrics', type: 'seg', options: [['cover', 'Show the cover'], ['stay', 'Keep the style']] },
+    { key: 'offsetMs', label: 'Timing (all songs)', hint: () => 'Use [ and ] to fix the timing of just the song that\'s playing.', type: 'range', min: -3000, max: 3000, step: 50, fmt: (v) => (v > 0 ? '+' : '') + (v / 1000).toFixed(2) + 's' },
   ]},
   { id: 'lights', title: 'RGB lights', summary: () => S.lights.enabled ? `${label(LIGHT_FX, S.lights.style)}, ${S.lights.colors === 'album' ? 'album colors' : S.lights.colors}` : 'Off', items: [
     { key: 'lights.enabled', label: 'Edge lights', type: 'toggle' },
@@ -117,6 +118,7 @@ const SCHEMA = [
   { id: 'display', title: 'Display & window', summary: () => { const d = UI.displays.find((x) => x.current); return UI.displays.length > 1 && d ? d.name : S.window.onTop ? 'Always on top' : 'Window'; }, items: [
     { key: '_screen', label: 'Show on', type: 'display', when: () => !!window.lw },
     { key: 'window.launchFullscreen', label: 'Open in fullscreen', type: 'toggle', when: () => !!window.lw },
+    { key: 'window.openAtLogin', label: 'Open when my computer starts', type: 'toggle', when: () => !!window.lw },
     { key: '_fullscreen', label: 'Fullscreen', type: 'action', text: 'Toggle', run: () => window.lw?.toggleFullscreen() },
     { key: 'window.onTop', label: 'Always on top', type: 'toggle' },
     { key: 'player.show', label: 'Show player', type: 'toggle' },
@@ -146,6 +148,7 @@ function updateText() {
 
 function renderItem(it) {
   const row = el('div', 'set-row set-' + it.type);
+  row.dataset.key = it.key;
   row.appendChild(el('div', 'set-label', it.label));
   const v = it.key.startsWith('_') ? null : sget(it.key);
   if (it.type === 'toggle') {
@@ -233,6 +236,8 @@ function renderItem(it) {
 function renderSettings() {
   const body = document.getElementById('settingsBody');
   const scroll = body.scrollTop;
+  // keep keyboard focus on the same control after redrawing
+  const focusKey = document.activeElement?.closest?.('#settingsBody .set-row')?.dataset.key;
   body.innerHTML = '';
   for (const sec of SCHEMA) {
     const open = UI.open === sec.id;
@@ -253,6 +258,7 @@ function renderSettings() {
     body.appendChild(s);
   }
   body.scrollTop = scroll;
+  if (focusKey) body.querySelector(`.set-row[data-key="${focusKey}"]`)?.querySelector('select, input, button')?.focus({ preventScroll: true });
 }
 
 async function openSettings(open) {

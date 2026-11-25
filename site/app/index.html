@@ -61,7 +61,9 @@
 
     <div id="idle" class="idle hidden">
       <img class="idle-logo" src="icon.png" alt="" />
-      <p>Play something on Spotify</p>
+      <div id="idleClock" class="idle-clock"></div>
+      <div id="idleDate" class="idle-date"></div>
+      <p id="idleText">Play something on Spotify</p>
     </div>
 
     <div id="player" class="player hidden">
@@ -70,6 +72,7 @@
         <div class="p-text">
           <div id="title" class="p-title"></div>
           <div id="artist" class="p-artist"></div>
+          <div id="device" class="p-device"></div>
         </div>
         <div class="p-progress">
           <span id="tCur">0:00</span>
@@ -94,12 +97,13 @@
       <button data-mode="vinyl">Vinyl</button>
       <span class="sep"></span>
       <button id="beatBtn" title="React to the music's beat">♪ Beat</button>
+      <button id="helpBtn" class="gear" title="Keyboard shortcuts (?)">?</button>
       <button id="gear" class="gear" title="Settings (S)">
         <svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 1 12 8.5a3.5 3.5 0 0 1 0 7zm7.4-2.5a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.4-2.5 1a7.4 7.4 0 0 0-1.7-1l-.4-2.6h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.4L4.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.4 2.5-1c.5.4 1.1.7 1.7 1l.4 2.6h4l.4-2.6c.6-.3 1.2-.6 1.7-1l2.5 1 2-3.4z"/></svg>
       </button>
     </nav>
 
-    <div class="hint">S settings · M mode · L next lyric style (incl. Auto-Vibe) · E light effect · C colors · Space play/pause · ← → skip · F fullscreen · Esc exit</div>
+    <div class="hint">Press ? for keyboard shortcuts</div>
     <div id="toast" class="toast"></div>
   </main>
 
@@ -109,6 +113,27 @@
     <div id="settingsBody" class="settings-body"></div>
   </aside>
 
+  <div id="help" class="help" role="dialog" aria-label="Keyboard shortcuts">
+    <div class="help-card">
+      <h2>Keyboard shortcuts</h2>
+      <dl>
+        <dt>Space</dt><dd>Play / pause</dd>
+        <dt>← →</dt><dd>Previous / next song</dd>
+        <dt>↑ ↓</dt><dd>Spotify volume</dd>
+        <dt>M</dt><dd>Lyrics, Cover, Vinyl</dd>
+        <dt>L</dt><dd>Next lyric style (Shift+L goes back)</dd>
+        <dt>E</dt><dd>Next light effect</dd>
+        <dt>C</dt><dd>Next light colors</dd>
+        <dt>B</dt><dd>Beat reaction on / off</dd>
+        <dt>[ ]</dt><dd>Lyrics early / late for this song</dd>
+        <dt>F</dt><dd>Fullscreen (Esc to leave)</dd>
+        <dt>T</dt><dd>Always on top</dd>
+        <dt>S</dt><dd>Settings</dd>
+        <dt>?</dt><dd>This list</dd>
+      </dl>
+      <p>Click the progress bar to jump anywhere in the song.</p>
+    </div>
+  </div>
   <div id="fxLayer" class="fx-layer" aria-hidden="true"></div>
   <div id="nowPill" class="now-pill" aria-hidden="true"><img alt="" /><div><b></b><span></span></div></div>
   <div id="updBanner" class="upd-banner" role="status"><span class="ub-text"></span><button class="ub-btn"></button><button class="ub-x" aria-label="Dismiss">×</button></div>

@@ -64,43 +64,36 @@
     <div class="scroll-cue" aria-hidden="true"><span></span></div>
   </section>
 
-  <!-- 2. Story: scroll through the app on a monitor in a dark room -->
-  <section class="story" id="story" aria-label="What LyricWall looks like">
-    <div class="story-pin">
-      <div class="wall-light" aria-hidden="true"></div>
-      <div class="chapters">
-        <article class="chapter" data-mode="chat">
-          <h2>Your lyrics, glowing on the wall.</h2>
-          <p>Whatever you play on Spotify shows up as a live conversation, synced to the second, with photo cards from real cities.</p>
-        </article>
-        <article class="chapter" data-mode="scroll">
-          <h2>Or scroll like a lyric sheet.</h2>
-          <p>The line you're on stays sharp. Everything else melts into the background.</p>
-        </article>
-        <article class="chapter" data-mode="focus">
-          <h2>Karaoke, word by word.</h2>
-          <p>Big lines that light up as they're sung. Lights chase around the edges.</p>
-        </article>
-        <article class="chapter" data-mode="cover">
-          <h2>Let the cover take over.</h2>
-          <p>Huge album art over a background made from its colors, pulsing to the beat.</p>
-        </article>
-        <article class="chapter" data-mode="vinyl">
-          <h2>Or spin the record.</h2>
-          <p>A vinyl that turns while the song plays and stops when you pause.</p>
-        </article>
+  <!-- 2. Styles: pick a look and watch the monitor change -->
+  <section class="styles-sec" id="styles" aria-label="Lyric styles">
+    <div class="styles-grid">
+      <div class="styles-text">
+        <h2 class="split">Pick a look.</h2>
+        <p class="styles-copy">Every style is live below. Click one to see it on the screen.</p>
+        <div class="chips looks" role="radiogroup" aria-label="Lyric style">
+          <button role="radio" aria-checked="true" data-look="chat">Messages</button>
+          <button role="radio" aria-checked="false" data-look="focus">Karaoke</button>
+          <button role="radio" aria-checked="false" data-look="kinetic">Kinetic</button>
+          <button role="radio" aria-checked="false" data-look="neon">Neon sign</button>
+          <button role="radio" aria-checked="false" data-look="tunnel">3D tunnel</button>
+          <button role="radio" aria-checked="false" data-look="spotlight">Spotlight</button>
+          <button role="radio" aria-checked="false" data-look="ink">Liquid ink</button>
+          <button role="radio" aria-checked="false" data-look="cover">Cover</button>
+          <button role="radio" aria-checked="false" data-look="vinyl">Vinyl</button>
+        </div>
+        <p class="effect-desc look-desc" id="lookDesc" aria-live="polite"></p>
+        <p class="more-styles">Plus 13 more in the app, like Constellation, Polaroids and Terminal. Or turn on Auto-Vibe and LyricWall picks a style that fits each song.</p>
       </div>
       <figure class="monitor-wrap">
+        <div class="wall-light" aria-hidden="true"></div>
         <div class="monitor">
           <div class="screen" id="screen">
-            <div class="screen-off" aria-hidden="true"></div>
             <iframe id="demo" title="LyricWall live demo" src="app/index.html?embed=1&mode=lyrics&t=5&lyrics.style=chat&lights.colors=rainbow&lights.style=flow" tabindex="-1"></iframe>
           </div>
         </div>
         <div class="stand" aria-hidden="true"></div>
         <div class="desk" aria-hidden="true"></div>
       </figure>
-      <div class="progress-dots" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
     </div>
   </section>
 

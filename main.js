@@ -175,8 +175,15 @@ async function tokenRequest(params) {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams(params).toString(),
   });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error_description || json.error || 'Token request failed');
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    // the saved login no longer works (revoked, or the Spotify app changed): ask the user to reconnect
+    if (params.grant_type === 'refresh_token' && /invalid_grant|invalid_client/.test(json.error || '')) {
+      store = { clientId: store.clientId, scopes: store.scopes }; saveStore();
+      const e = new Error('auth'); e.auth = true; throw e;
+    }
+    throw new Error(json.error_description || json.error || 'Token request failed');
+  }
   store.accessToken = json.access_token;
   store.expiresAt = Date.now() + (json.expires_in - 60) * 1000;
   if (json.refresh_token) store.refreshToken = json.refresh_token;
@@ -219,12 +226,14 @@ function login(clientId) {
 }
 
 // ---------- Playback controls (Spotify Premium required) ----------
-async function control(action) {
+async function control(action, arg) {
   const token = await accessToken();
   if (!token) return { ok: false, error: 'Not logged in' };
   const map = {
     play: ['PUT', '/me/player/play'], pause: ['PUT', '/me/player/pause'],
     next: ['POST', '/me/player/next'], previous: ['POST', '/me/player/previous'],
+    seek: ['PUT', '/me/player/seek?position_ms=' + Math.max(0, Math.round(+arg || 0))],
+    volume: ['PUT', '/me/player/volume?volume_percent=' + Math.max(0, Math.min(100, Math.round(+arg || 0)))],
   };
   const [method, p] = map[action] || [];
   if (!method) return { ok: false, error: 'Unknown action' };
@@ -236,28 +245,39 @@ async function control(action) {
   return { ok: false, error: 'Spotify error ' + res.status };
 }
 
+// Only one refresh at a time: Spotify replaces the refresh token on every use,
+// so two parallel refreshes would make the second one fail.
+let refreshing = null;
 async function accessToken() {
   if (!store.refreshToken) return null;
   if (!store.accessToken || Date.now() > store.expiresAt) {
-    await tokenRequest({ grant_type: 'refresh_token', refresh_token: store.refreshToken, client_id: store.clientId });
+    refreshing ||= tokenRequest({ grant_type: 'refresh_token', refresh_token: store.refreshToken, client_id: store.clientId })
+      .finally(() => { refreshing = null; });
+    try { await refreshing; } catch (e) { if (e.auth) return null; throw e; }
   }
   return store.accessToken;
 }
+let retryUntil = 0; // Spotify rate limit backoff
 
 // ---------- Now playing ----------
 async function nowPlaying() {
+  if (Date.now() < retryUntil) return { error: 'ratelimit' };
   const token = await accessToken();
   if (!token) return { error: 'auth' };
-  const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
-    headers: { Authorization: 'Bearer ' + token },
-  });
-  if (res.status === 204) return { idle: true };
+  let res;
+  try {
+    res = await fetch('https://api.spotify.com/v1/me/player?additional_types=episode', { headers: { Authorization: 'Bearer ' + token } });
+  } catch { return { error: 'offline' }; }
+  if (res.status === 204) return { idle: true, reason: 'nothing' };
   if (res.status === 401) { store.expiresAt = 0; return { error: 'retry' }; }
-  if (res.status === 429) return { error: 'ratelimit' };
+  if (res.status === 429) { retryUntil = Date.now() + (+res.headers.get('retry-after') || 5) * 1000; return { error: 'ratelimit' }; }
   if (!res.ok) return { error: 'http ' + res.status };
   const j = await res.json();
   const t = j.item;
-  if (!t || j.currently_playing_type !== 'track') return { idle: true };
+  const device = j.device ? { name: j.device.name, type: j.device.type, volume: j.device.volume_percent, canVolume: j.device.supports_volume !== false } : null;
+  if (j.currently_playing_type === 'episode') return { idle: true, reason: 'podcast', device };
+  if (j.currently_playing_type === 'ad') return { idle: true, reason: 'ad', device };
+  if (!t || j.currently_playing_type !== 'track') return { idle: true, reason: 'nothing', device };
   return {
     id: t.id,
     title: t.name,
@@ -270,6 +290,7 @@ async function nowPlaying() {
     durationMs: t.duration_ms,
     progressMs: j.progress_ms,
     playing: j.is_playing,
+    device,
     fetchedAt: Date.now(),
   };
 }
@@ -299,12 +320,15 @@ async function lyrics({ id, title, mainArtist, album, durationMs }) {
     const q = new URLSearchParams({ track_name: title, artist_name: mainArtist, album_name: album, duration: Math.round(durationMs / 1000) });
     let r = await fetch('https://lrclib.net/api/get?' + q, { headers });
     if (r.ok) result = await r.json();
-    if (!result || !result.syncedLyrics) {
-      const sq = new URLSearchParams({ track_name: title.replace(/\s*[\(\[-].*$/, ''), artist_name: mainArtist });
-      r = await fetch('https://lrclib.net/api/search?' + sq, { headers });
+    // fallbacks: a cleaned-up title ("Song - 2011 Remaster (feat. X)" -> "Song"), then a free-text search
+    const clean = title.replace(/\s*[\(\[].*?(feat|with|remaster|version|edit|live|mono|stereo|remix).*?[\)\]]/gi, '').replace(/\s+-\s+.*$/, '').trim();
+    const near = (x) => Math.abs((x.duration || 0) - durationMs / 1000) < 8;
+    for (const sq of [{ track_name: clean, artist_name: mainArtist }, { q: `${clean} ${mainArtist}` }]) {
+      if (result && result.syncedLyrics) break;
+      r = await fetch('https://lrclib.net/api/search?' + new URLSearchParams(sq), { headers });
       if (r.ok) {
         const list = await r.json();
-        result = list.find((x) => x.syncedLyrics) || list[0] || result;
+        result = list.find((x) => x.syncedLyrics && near(x)) || list.find((x) => x.syncedLyrics) || result || list[0];
       }
     }
   } catch (e) { /* offline etc. */ }
@@ -401,7 +425,8 @@ function readImage(p, maxW = 2000) {
 
 // ---------- IPC ----------
 ipcMain.handle('status', () => ({ loggedIn: !!store.refreshToken, needsReauth: !!store.refreshToken && store.scopes !== SCOPES, clientId: store.clientId || '' }));
-ipcMain.handle('control', async (_e, action) => { try { return await control(action); } catch (e) { return { ok: false, error: e.message }; } });
+ipcMain.handle('control', async (_e, action, arg) => { try { return await control(action, arg); } catch (e) { return { ok: false, error: e.message }; } });
+ipcMain.handle('loginItem', (_e, v) => { if (typeof v === 'boolean') app.setLoginItemSettings({ openAtLogin: v }); return app.getLoginItemSettings().openAtLogin; });
 ipcMain.handle('login', async (_e, clientId) => { try { await login(clientId); return { ok: true }; } catch (e) { return { ok: false, error: e.message }; } });
 ipcMain.handle('logout', () => { store = { clientId: store.clientId }; saveStore(); return true; });
 ipcMain.handle('nowPlaying', async () => { try { return await nowPlaying(); } catch (e) { return { error: e.message }; } });
