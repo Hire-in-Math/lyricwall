@@ -560,3 +560,10 @@ body:hover .hint { opacity: 1; }
 .help-card dd { font-size: 14px; color: rgba(255,255,255,.8); }
 .help-card p { margin-top: 18px; font-size: 13px; color: rgba(255,255,255,.5); }
 #helpBtn { font-weight: 800; font-size: 14px; width: 32px; padding: 7px 0; }
+
+/* setup: Client ID box with a Paste button */
+.id-row { display: flex; gap: 8px; margin-bottom: 0; }
+.id-row input { flex: 1; min-width: 0; font-family: ui-monospace, Menlo, Consolas, monospace; letter-spacing: .02em; }
+.paste-btn { flex: none; border: 0; border-radius: 10px; padding: 0 16px; background: rgba(255,255,255,.14); font-size: 14px; font-weight: 650; cursor: pointer; }
+.paste-btn:hover { background: rgba(255,255,255,.22); }
+.paste-btn:focus-visible { outline: 2px solid #8fc1ff; outline-offset: 2px; }

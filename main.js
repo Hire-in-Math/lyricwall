@@ -1,5 +1,5 @@
 // LyricWall — main process: window, Spotify auth (PKCE), now-playing + lyrics fetching.
-const { app, BrowserWindow, ipcMain, shell, session, desktopCapturer, dialog, nativeImage, Menu, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, session, desktopCapturer, dialog, nativeImage, Menu, screen, clipboard } = require('electron');
 const http = require('http');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -57,6 +57,14 @@ function createWindow() {
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true },
   });
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
+  // right-click menu for text boxes and selected text
+  win.webContents.on('context-menu', (_e, p) => {
+    if (!p.isEditable && !p.selectionText) return;
+    const items = p.isEditable
+      ? [{ role: 'cut', enabled: p.editFlags.canCut }, { role: 'copy', enabled: p.editFlags.canCopy }, { role: 'paste', enabled: p.editFlags.canPaste }, { type: 'separator' }, { role: 'selectAll' }]
+      : [{ role: 'copy' }];
+    Menu.buildFromTemplate(items).popup({ window: win });
+  });
   win.once('ready-to-show', () => {
     win.show();
     if (store.displayId != null) moveToDisplay(store.displayId, !!store.launchFullscreen);
@@ -119,6 +127,7 @@ function buildMenu() {
       { label: 'Check for Updates…', click: () => checkUpdates(true) },
       { type: 'separator' }, { role: 'quit', label: 'Quit LyricWall' },
     ] }]),
+    { role: 'editMenu' },
     { label: 'View', submenu: [
       { label: 'Lyrics', accelerator: 'CmdOrCtrl+1', click: toRenderer('mode:lyrics') },
       { label: 'Cover', accelerator: 'CmdOrCtrl+2', click: toRenderer('mode:cover') },
@@ -435,6 +444,7 @@ ipcMain.handle('fetchImage', (_e, url) => fetchImage(url));
 ipcMain.handle('toggleFullscreen', () => win.setFullScreen(!win.isFullScreen()));
 ipcMain.handle('toggleOnTop', () => { const v = !win.isAlwaysOnTop(); win.setAlwaysOnTop(v, 'floating'); return v; });
 ipcMain.handle('quit', () => app.quit());
+ipcMain.handle('clipboardText', () => clipboard.readText());
 ipcMain.handle('openExternal', (_e, url) => { if (/^https:\/\//.test(url)) shell.openExternal(url); });
 ipcMain.handle('artistGenres', (_e, id) => artistGenres(id));
 ipcMain.handle('placePhoto', (_e, q) => placePhoto(q));

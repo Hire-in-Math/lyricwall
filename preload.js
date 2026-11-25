@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld('lw', {
   listImages: inv('listImages'),
   readImage: inv('readImage'),
   openExternal: inv('openExternal'),
+  clipboardText: inv('clipboardText'),
   quit: inv('quit'),
   isFullscreen: inv('isFullscreen'),
   minimize: inv('minimize'),

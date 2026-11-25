@@ -710,9 +710,21 @@ function friendlyError(e = '') {
   return e || 'Something went wrong. Try again.';
 }
 function showSetup(err) { $('setup').classList.remove('hidden'); if (err) $('setupErr').textContent = err; }
+// Client IDs are 32 letters/numbers; pull one out even if extra text or spaces came along
+const cleanId = (t = '') => (t.match(/[0-9a-f]{32}/i) || [t.trim()])[0];
+$('pasteId').onclick = async () => {
+  let t = '';
+  try { t = api ? await api.clipboardText() : await navigator.clipboard.readText(); } catch {}
+  if (!t.trim()) return ($('setupErr').textContent = 'Your clipboard is empty. Copy the Client ID from your Spotify app page first.');
+  $('clientId').value = cleanId(t); $('setupErr').textContent = '';
+};
+$('clientId').addEventListener('paste', () => setTimeout(() => ($('clientId').value = cleanId($('clientId').value)), 0));
+$('clientId').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('connect').click(); });
 $('connect').onclick = async () => {
-  const id = $('clientId').value.trim();
+  const id = cleanId($('clientId').value);
+  $('clientId').value = id;
   if (!id) return ($('setupErr').textContent = 'Paste your Client ID first');
+  if (!/^[0-9a-f]{32}$/i.test(id)) return ($('setupErr').textContent = 'That doesn’t look like a Client ID. It’s 32 letters and numbers, shown on your Spotify app’s Settings page.');
   $('setupErr').textContent = 'A browser tab opened. Log in and click Agree, then come back here…';
   const r = await api.login(id);
   if (r.ok) { $('setup').classList.add('hidden'); $('setupErr').textContent = ''; poll(); }

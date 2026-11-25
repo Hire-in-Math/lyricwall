@@ -36,7 +36,10 @@
         <li><b>Tick “Web API”</b>, agree to the terms, and click Save.</li>
         <li><b>Copy the Client ID</b> from your app’s page and paste it here:</li>
       </ol>
-      <input id="clientId" placeholder="Paste your Client ID" spellcheck="false" />
+      <div class="id-row">
+        <input id="clientId" placeholder="Paste your Client ID" spellcheck="false" autocomplete="off" />
+        <button id="pasteId" class="paste-btn" type="button">Paste</button>
+      </div>
       <button id="connect">Connect Spotify</button>
       <p id="setupErr" class="err"></p>
       <button class="link" data-open="https://lyricwall-app.netlify.app/setup.html">Need help? Open the full setup guide ↗</button>
