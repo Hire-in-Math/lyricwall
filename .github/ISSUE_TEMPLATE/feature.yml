@@ -1,0 +1,21 @@
+name: I have an idea
+description: Suggest a new lyric style, light effect or anything else
+labels: [idea]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: What's it about?
+      options: [A new lyric style, Lights, Backgrounds, Controls or settings, Something else]
+    validations: { required: true }
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: Describe it like you'd tell a friend. Links to videos or pictures for inspiration are great.
+    validations: { required: true }
+  - type: textarea
+    id: why
+    attributes:
+      label: Why would it be good?
+      description: When would you use it?

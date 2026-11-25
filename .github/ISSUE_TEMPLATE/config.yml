@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Setup guide
+    url: https://lyricwall-app.netlify.app/setup.html
+    about: Installing LyricWall and connecting Spotify, step by step.
+  - name: Common fixes
+    url: https://lyricwall-app.netlify.app/support.html#fixes
+    about: Answers for missing lyrics, timing, lights and Spotify sign-in.

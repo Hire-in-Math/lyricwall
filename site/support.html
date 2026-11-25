@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LyricWall support</title>
+  <meta name="description" content="Report a problem, suggest a feature, or find a quick fix for LyricWall." />
+  <link rel="icon" href="assets/favicon.png" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="support-page">
+  <header class="nav">
+    <a class="brand" href="./"><img src="assets/icon.png" alt="" width="28" height="28" />LyricWall</a>
+    <nav>
+      <a href="./">Home</a>
+      <a href="setup.html">Setup guide</a>
+      <a class="repo-link" href="#" data-repo>GitHub</a>
+    </nav>
+  </header>
+
+  <main class="guide support">
+    <h1>How can I help?</h1>
+
+    <div class="thread" aria-label="Choose what you need">
+      <p class="msg in">Hey! Is something broken, or do you have an idea for LyricWall?</p>
+      <div class="replies">
+        <a class="reply" data-issue="bug.yml" href="#">
+          <span class="reply-title">Something's broken</span>
+          <span class="reply-sub">Report a bug. I read every one.</span>
+        </a>
+        <a class="reply" data-issue="feature.yml" href="#">
+          <span class="reply-title">I have an idea</span>
+          <span class="reply-sub">Suggest a lyric style, light effect or anything else.</span>
+        </a>
+        <a class="reply quiet" data-issues href="#">
+          <span class="reply-title">See what others posted</span>
+          <span class="reply-sub">Upvote ideas with a 👍 and check if your problem is already known.</span>
+        </a>
+      </div>
+      <p class="thread-note">Posting needs a free GitHub account. It's where every report and idea lives, so everyone can follow along.</p>
+    </div>
+
+    <h2 id="fixes">Quick fixes</h2>
+    <div class="faq">
+      <details><summary>LyricWall says to connect Spotify again.</summary><p>Spotify signed you out, which can happen if you changed your password or removed the app's access. Click Connect Spotify and sign in. Your settings are kept.</p></details>
+      <details><summary>Nothing shows up when I play a song.</summary><p>Check that Spotify is playing on some device, like your phone, computer or speaker, and that you're on Spotify Premium. Podcasts and ads don't have lyrics, so LyricWall shows a clock while they play.</p></details>
+      <details><summary>Some songs don't have lyrics.</summary><p>Lyrics come from LRCLIB, a free community database, and some songs aren't in it yet. LyricWall shows the album cover for those. You can change that in Settings, under Songs without lyrics.</p></details>
+      <details><summary>The lyrics are early or late.</summary><p>Press <kbd>[</kbd> or <kbd>]</kbd> while the song plays to nudge it by a quarter second. LyricWall remembers the fix for that song.</p></details>
+      <details><summary>The lights don't move with the beat.</summary><p>On a Mac, open System Settings, go to Privacy &amp; Security, then Screen &amp; System Audio Recording, and turn on LyricWall. Then press <kbd>B</kbd> in the app. On Windows, press <kbd>B</kbd> and make sure the Beat button is on.</p></details>
+      <details><summary>Play, skip or volume don't work.</summary><p>Spotify only allows these with Premium and an active device. Start playing in Spotify first, then try again. Some speakers and TVs don't allow volume changes from other apps.</p></details>
+      <details><summary>My Mac says the app "can't be opened."</summary><p>Open System Settings, go to Privacy &amp; Security, scroll down and click Open Anyway. You only do this once. <a href="setup.html#mac">Step-by-step help</a>.</p></details>
+    </div>
+    <p class="fixes-more">Press <kbd>?</kbd> in the app to see every keyboard shortcut.</p>
+
+    <section class="coffee-card" data-coffee-block hidden>
+      <img src="assets/icon.png" alt="" width="56" height="56" />
+      <div>
+        <h2>LyricWall is free.</h2>
+        <p>If it's on your wall every day and you'd like to say thanks, a coffee keeps the updates coming. It's completely optional, and nothing in the app is locked.</p>
+      </div>
+      <a class="coffee-btn" data-coffee href="#" target="_blank" rel="noopener">☕ Buy me a coffee</a>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p>Made by Nihal Hiremath. Not affiliated with Spotify.</p>
+    <p><a href="./">Home</a> <a href="setup.html">Setup guide</a> <a href="#" data-repo>Source code</a></p>
+  </footer>
+
+  <script src="assets/vendor/anime.umd.min.js"></script>
+  <script src="site.js"></script>
+</body>
+</html>

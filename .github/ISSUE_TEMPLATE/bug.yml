@@ -1,0 +1,39 @@
+name: Something's broken
+description: LyricWall isn't working the way it should
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting this. The more detail you give, the faster it gets fixed.
+  - type: dropdown
+    id: os
+    attributes:
+      label: Computer
+      options: [Mac, Windows]
+    validations: { required: true }
+  - type: input
+    id: version
+    attributes:
+      label: LyricWall version
+      description: Open Settings and scroll to the bottom to see it.
+      placeholder: "1.2.1"
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what did you see instead?
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can I make it happen?
+      description: The steps, and the song if it only happens with one.
+      placeholder: |
+        1. Play "Song name" by Artist
+        2. Switch to the Neon style
+        3. ...
+  - type: textarea
+    id: shots
+    attributes:
+      label: Screenshots or a screen recording
+      description: Drag files in here. Optional, but very helpful.

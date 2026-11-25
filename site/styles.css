@@ -246,3 +246,52 @@ kbd { font-family: inherit; font-size: .88em; font-weight: 600; padding: 1px 7px
 
   html { scroll-behavior: auto; }
 }
+
+/* ---------- Support ---------- */
+.support h1 { margin-bottom: 36px; }
+.thread { display: grid; gap: 14px; max-width: 620px; }
+.msg.in { justify-self: start; max-width: 30ch; padding: 14px 20px; border-radius: 22px 22px 22px 6px; background: rgba(255,255,255,.12); font-size: 18px; }
+.replies { display: grid; gap: 10px; justify-items: end; }
+.reply {
+  display: grid; gap: 2px; text-decoration: none; color: #fff; text-align: right;
+  padding: 14px 20px; border-radius: 22px 22px 6px 22px; min-width: min(360px, 100%);
+  background: linear-gradient(180deg, #4b95ff, #1f6ef0); box-shadow: 0 10px 34px rgba(31,110,240,.35), inset 0 1px 0 rgba(255,255,255,.25);
+  transition: transform .15s, filter .2s;
+}
+.reply.quiet { background: rgba(47,123,246,.18); box-shadow: inset 0 0 0 1px rgba(75,149,255,.45); }
+.reply:hover { transform: translateY(-2px); filter: brightness(1.08); }
+.reply:active { transform: scale(.98); }
+.reply:focus-visible, .help-btn:focus-visible, .help-pop a:focus-visible, .coffee-btn:focus-visible { outline: 2px solid #8fc1ff; outline-offset: 3px; }
+.guide .reply, .guide .reply-title { color: #fff; }
+.reply-title { font-weight: 700; font-size: 17px; }
+.reply-sub { font-size: 14px; color: rgba(255,255,255,.78); }
+.thread-note { color: var(--muted); font-size: 14px; margin-top: 6px; max-width: 52ch; }
+.fixes-more { color: var(--muted); margin-top: 22px; font-size: 15px; }
+kbd { display: inline-block; padding: 1px 7px; border-radius: 6px; background: rgba(255,255,255,.12); box-shadow: inset 0 -1px 0 rgba(255,255,255,.18); font: 600 .85em/1.5 inherit; color: var(--ink); }
+
+.coffee-card { margin-top: 90px; display: grid; grid-template-columns: auto 1fr auto; gap: 22px; align-items: center; padding: 26px 28px; border-radius: 26px; background: linear-gradient(135deg, rgba(255,221,0,.12), rgba(255,63,240,.08)); box-shadow: inset 0 0 0 1px rgba(255,221,0,.25); }
+.coffee-card[hidden] { display: none; }
+.coffee-card img { border-radius: 14px; }
+.coffee-card h2 { margin: 0 0 6px; font-size: 24px; }
+.coffee-card p { color: var(--muted); font-size: 15px; max-width: 48ch; }
+.guide .coffee-btn, .coffee-btn { white-space: nowrap; text-decoration: none; font-weight: 750; color: #1a1300; background: #ffdd00; border: 0; padding: 13px 20px; border-radius: 999px; transition: transform .15s; }
+.coffee-btn:hover { transform: translateY(-2px) rotate(-2deg); }
+@media (max-width: 700px) { .coffee-card { grid-template-columns: 1fr; text-align: left; } .reply { min-width: 0; width: 100%; } }
+
+/* floating help button */
+.help-fab { position: fixed; right: clamp(16px, 2.5vw, 28px); bottom: clamp(16px, 2.5vw, 28px); z-index: 60; display: grid; justify-items: end; gap: 12px; }
+.help-btn { position: relative; width: 56px; height: 56px; border: 0; border-radius: 50%; cursor: pointer; color: #fff; display: grid; place-items: center;
+  background: #111; box-shadow: 0 12px 34px rgba(0,0,0,.6); transition: transform .2s; }
+.help-btn::before { content: ""; position: absolute; inset: -2px; border-radius: 50%; z-index: -1; background: var(--rgb); animation: spin 6s linear infinite; }
+.help-btn::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; z-index: -2; background: var(--rgb); filter: blur(12px); opacity: .55; animation: spin 6s linear infinite; }
+.help-btn:hover { transform: scale(1.06); }
+.help-fab.open .help-btn { transform: rotate(-8deg) scale(.96); }
+.help-pop { width: 280px; padding: 10px; border-radius: 20px 20px 6px 20px; background: rgba(20,20,24,.94); backdrop-filter: blur(16px); box-shadow: inset 0 0 0 1px rgba(255,255,255,.1), 0 24px 60px rgba(0,0,0,.6); display: grid; gap: 2px; }
+.help-pop[hidden] { display: none; }
+.help-pop-title { padding: 8px 12px 6px; font-weight: 750; font-size: 15px; }
+.help-pop a { display: grid; padding: 10px 12px; border-radius: 12px; text-decoration: none; color: var(--ink); }
+.help-pop a:hover { background: rgba(255,255,255,.08); }
+.help-pop a b { font-size: 15px; font-weight: 650; }
+.help-pop a span { font-size: 13px; color: var(--muted); }
+.help-pop .pop-coffee b { color: #ffdd00; }
+@media (prefers-reduced-motion: reduce) { .help-btn::before, .help-btn::after { animation: none; } }
