@@ -351,6 +351,11 @@ Views.minimal = stackView('minimal');
 Views.chat.font = Views.scroll.font = Views.focus.font = Views.minimal.font = 'system';
 Object.assign(Views, ExtraViews);
 
+// The style actually on screen: Auto-Vibe's pick for this song, or the one the user chose
+function curStyle() { return S.lyrics.style === 'auto' ? (state.autoStyle || 'chat') : S.lyrics.style; }
+window.curStyle = curStyle;
+window.lwState = state;
+
 // fonts: 'auto' uses each style's own font
 const FONT_STACKS = {
   system: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI Variable Display", "Segoe UI", sans-serif',
@@ -360,7 +365,7 @@ const FONT_STACKS = {
   neon: '"LW Neon", sans-serif', caveat: '"LW Caveat", cursive', doto: '"LW Doto", ui-monospace, monospace',
 };
 function applyLyricFont() {
-  const v = Views[S.lyrics.style] || Views.chat;
+  const v = Views[curStyle()] || Views.chat;
   const key = S.lyrics.font && S.lyrics.font !== 'auto' ? S.lyrics.font : v.font || 'system';
   document.documentElement.style.setProperty('--lf', FONT_STACKS[key] || FONT_STACKS.system);
   document.body.dataset.font = key;
@@ -379,10 +384,10 @@ const ArtLyric = {
 };
 
 function renderLyrics(fresh) {
-  const v = Views[S.lyrics.style] || Views.chat;
-  document.body.dataset.lyrics = S.lyrics.style;
+  const v = Views[curStyle()] || Views.chat;
+  document.body.dataset.lyrics = curStyle();
   if (fresh) {
-    $('lyrics').innerHTML = ''; $('lyrics').className = 'lyrics lyr-' + S.lyrics.style;
+    $('lyrics').innerHTML = ''; $('lyrics').className = 'lyrics lyr-' + curStyle();
     applyLyricFont();
     if (state.lines.length || !v.needsLines) v.init();
     $('artLyric').innerHTML = '';
@@ -395,7 +400,7 @@ function renderLyrics(fresh) {
 }
 function updateWords(force) {
   const p = lyricPos();
-  const v = Views[S.lyrics.style];
+  const v = Views[curStyle()];
   for (const w of state.liveWords) {
     const on = +w.dataset.t <= p;
     const was = w.classList.contains('on');
@@ -437,13 +442,13 @@ function tick() {
       if (idx !== state.idx) {
         const jumped = idx < state.idx || idx - state.idx > 3;
         state.liveWords.forEach((w) => w.classList.add('on'));
-        if (jumped && S.lyrics.style === 'chat') { [...$('lyrics').querySelectorAll('.msg')].forEach((m) => { m.classList.add('leaving'); setTimeout(() => m.remove(), 700); }); state.count = 0; }
+        if (jumped && curStyle() === 'chat') { [...$('lyrics').querySelectorAll('.msg')].forEach((m) => { m.classList.add('leaving'); setTimeout(() => m.remove(), 700); }); state.count = 0; }
         state.idx = idx;
         renderLyrics(false);
       }
       updateWords();
     }
-    if (S.mode === 'lyrics') { const v = Views[S.lyrics.style]; try { v?.frame?.(performance.now()); } catch (e) { console.warn(e); } }
+    if (S.mode === 'lyrics') { const v = Views[curStyle()]; try { v?.frame?.(performance.now()); } catch (e) { console.warn(e); } }
   }
   requestAnimationFrame(tick);
 }
@@ -485,8 +490,21 @@ async function onNewTrack(tr) {
     state.lines = [{ t: 0, text: lyr.instrumental ? '♪ instrumental ♪' : '♪' }];
     if (!lyr.instrumental) toast('No lyrics found for this one');
   }
+  await decideVibe(tr);
+  if (state.track !== tr) return;
   state.liveWords = [];
   renderLyrics(true);
+}
+
+// Auto-Vibe: choose a style for this song from its artist's genres + the lyrics
+async function decideVibe(tr) {
+  let genres = [];
+  try { genres = api ? await api.artistGenres(tr.artistId) : DEMO.genres; } catch {}
+  const v = Vibe.classify({ genres, lines: state.lines, explicit: tr.explicit, title: tr.title });
+  state.vibe = v;
+  state.autoStyle = Vibe.pick(v.vibe, tr.id);
+  if (S.lyrics.style === 'auto' && !document.body.classList.contains('embed'))
+    setTimeout(() => toast(`Auto-Vibe: ${styleInfo(state.autoStyle)[1]} (${v.label})`), 900);
 }
 
 async function poll() {
@@ -675,11 +693,11 @@ window.addEventListener('keydown', async (e) => {
 });
 
 function nextStyle(dir = 1) {
-  const keys = STYLE_LIST.map((x) => x[0]);
+  const keys = ['auto', ...STYLE_LIST.map((x) => x[0]).filter((k) => k !== 'auto')];
   const next = keys[(keys.indexOf(S.lyrics.style) + dir + keys.length) % keys.length];
   sset('lyrics.style', next);
   if (S.mode !== 'lyrics') setMode('lyrics');
-  toast(styleInfo(next)[1]);
+  toast(next === 'auto' ? `Auto-Vibe: ${styleInfo(curStyle())[1]}` : styleInfo(next)[1]);
 }
 
 // "Now playing" pop when the song changes (lyrics mode, where the player is small)
@@ -735,6 +753,7 @@ const DEMO = (() => {
   };
   return {
     photo,
+    genres: ['indie pop'],
     lyrics: { synced: lines.map(([s, t]) => `[00:${String(s).padStart(2, '0')}.00]${t}`).join('\n') },
     nowPlaying: () => ({
       id: 'demo', title: 'Neon Postcards', artist: 'Demo Artist', mainArtist: 'Demo Artist', album: 'Demo', art,

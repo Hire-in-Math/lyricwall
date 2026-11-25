@@ -263,6 +263,8 @@ async function nowPlaying() {
     title: t.name,
     artist: t.artists.map((a) => a.name).join(', '),
     mainArtist: t.artists[0]?.name || '',
+    artistId: t.artists[0]?.id || '',
+    explicit: !!t.explicit,
     album: t.album?.name || '',
     art: t.album?.images?.[0]?.url || '',
     durationMs: t.duration_ms,
@@ -270,6 +272,21 @@ async function nowPlaying() {
     playing: j.is_playing,
     fetchedAt: Date.now(),
   };
+}
+
+// ---------- Artist genres (for Auto-Vibe). Audio features are closed to new Spotify apps, genres aren't ----------
+const genreCache = new Map();
+async function artistGenres(id) {
+  if (!id) return [];
+  if (genreCache.has(id)) return genreCache.get(id);
+  let g = [];
+  try {
+    const token = await accessToken();
+    const r = await fetch('https://api.spotify.com/v1/artists/' + encodeURIComponent(id), { headers: { Authorization: 'Bearer ' + token } });
+    if (r.ok) g = (await r.json()).genres || [];
+  } catch {}
+  genreCache.set(id, g);
+  return g;
 }
 
 // ---------- Lyrics (LRCLIB, free synced lyrics) ----------
@@ -394,6 +411,7 @@ ipcMain.handle('toggleFullscreen', () => win.setFullScreen(!win.isFullScreen()))
 ipcMain.handle('toggleOnTop', () => { const v = !win.isAlwaysOnTop(); win.setAlwaysOnTop(v, 'floating'); return v; });
 ipcMain.handle('quit', () => app.quit());
 ipcMain.handle('openExternal', (_e, url) => { if (/^https:\/\//.test(url)) shell.openExternal(url); });
+ipcMain.handle('artistGenres', (_e, id) => artistGenres(id));
 ipcMain.handle('placePhoto', (_e, q) => placePhoto(q));
 ipcMain.handle('pickImage', () => pickImage());
 ipcMain.handle('pickFolder', () => pickFolder());

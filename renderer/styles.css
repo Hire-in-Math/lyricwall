@@ -494,3 +494,41 @@ body:hover .hint { opacity: 1; }
 .now-pill span { font-size: 12.5px; color: rgba(255,255,255,.6); }
 .idle-logo { width: 110px; height: 110px; border-radius: 26px; animation: breathe 3.6s ease-in-out infinite; }
 @keyframes breathe { 50% { transform: scale(1.06); filter: drop-shadow(0 0 24px rgba(170,90,255,.55)); } }
+
+/* =====================================================================
+   v1.2: Spotlight, Shockwave, Liquid Ink, 3D Tunnel
+   ===================================================================== */
+/* --- Spotlight / X-ray --- */
+.xray { position: absolute; inset: 0; overflow: hidden; background: #000; --x: 50vw; --y: 50vh; --r: 200px; --c1: #ff3ff0; --c2: #22c8ff; }
+.xray-text { position: absolute; inset: 0; padding: 1vh 1vw; text-transform: uppercase; font-size: calc(7.4vh * var(--lyricScale)); line-height: .9; letter-spacing: .01em; text-align: justify; overflow-wrap: anywhere;
+  background: radial-gradient(circle var(--r) at var(--x) var(--y), #fff 0, var(--c1) 32%, var(--c2) 64%, #0f0f12 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; }
+.xray-text .w { display: inline; }
+.xl.cur .w.on { color: rgba(255,255,255,.2); }
+.xray-orb { position: absolute; left: 0; top: 0; width: 70vmin; height: 70vmin; border-radius: 50%; pointer-events: none; mix-blend-mode: screen; filter: blur(24px); }
+
+/* --- Shockwave --- */
+.shock { position: absolute; inset: 0; overflow: hidden; }
+.shock-field .fw { position: absolute; left: 0; top: 0; white-space: nowrap; font-weight: 800; font-stretch: 110%; font-size: calc(clamp(16px, 1.7vw, 32px) * var(--lyricScale)); opacity: .75; text-shadow: 0 0 14px currentColor; will-change: transform; }
+.shock-rings { position: absolute; inset: 0; pointer-events: none; }
+.shock-ring { position: absolute; left: 50%; top: 50%; width: 40vmin; height: 40vmin; margin: -20vmin 0 0 -20vmin; border-radius: 50%; border: 3px solid; filter: drop-shadow(0 0 18px rgba(255,255,255,.4)); }
+.shock-center { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+.shock-line { max-width: 72vw; text-align: center; font-weight: 900; font-stretch: 120%; font-size: calc(clamp(34px, 4.6vw, 96px) * var(--lyricScale)); line-height: 1; letter-spacing: -.035em; text-transform: uppercase; }
+.shock-line .w:not(.on) { opacity: .25; }
+
+/* --- Liquid ink --- */
+.ink-defs { position: absolute; }
+.ink { position: absolute; inset: 0; overflow: hidden; }
+.ink-line { position: absolute; left: 50%; top: 48%; translate: -50% -50%; width: min(80vw, 1300px); text-align: center; font-weight: 700; font-size: calc(clamp(34px, 4.6vw, 100px) * var(--lyricScale)); line-height: 1.06; letter-spacing: -.02em; }
+.ink-line .w { transition: opacity .35s; }
+.ink-line .w:not(.on) { opacity: .22; }
+.ink-line.melting .w { opacity: 1; }
+.ink .ch { display: inline-block; }
+.ink-smoke .puff { position: absolute; left: 50%; top: 48%; width: 40vmin; height: 40vmin; margin: -20vmin 0 0 -20vmin; border-radius: 50%; filter: blur(30px); pointer-events: none; }
+
+/* --- 3D tunnel --- */
+.tunnel { position: absolute; inset: 0; overflow: hidden; perspective: 700px; perspective-origin: 50% 48%; }
+.rings, .tlines { position: absolute; inset: 0; transform-style: preserve-3d; }
+.tring { position: absolute; left: 50%; top: 48%; width: 92vw; height: 86vh; border: 2px solid; border-radius: 28px; box-shadow: 0 0 34px rgba(255,255,255,.06), inset 0 0 34px rgba(255,255,255,.04); }
+.tl3 { position: absolute; left: 50%; top: 48%; width: min(80vw, 1200px); text-align: center; font-weight: 800; font-size: calc(clamp(28px, 3.8vw, 80px) * var(--lyricScale)); line-height: 1.05; letter-spacing: -.03em; will-change: transform, opacity; }
+.tl3 .w:not(.on) { opacity: .3; }

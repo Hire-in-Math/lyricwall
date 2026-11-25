@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('lw', {
   setOnTop: inv('setOnTop'),
   setFullscreen: inv('setFullscreen'),
   placePhoto: inv('placePhoto'),
+  artistGenres: inv('artistGenres'),
   pickImage: inv('pickImage'),
   pickFolder: inv('pickFolder'),
   listImages: inv('listImages'),

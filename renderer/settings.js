@@ -19,7 +19,7 @@ const DEFAULTS = {
   },
   beat: { enabled: true, sensitivity: 0.5, pulseArt: true },
   bg: { source: 'album', imagePath: '', folderPath: '', slideSec: 30, blur: 0.25, dim: 0.35, grain: true },
-  lyrics: { style: 'chat', font: 'auto', wordByWord: true, emphasis: true, icons: true, size: 1, cardPhotos: 'places', cardFolder: '', onArtModes: true, cardEvery: 4 },
+  lyrics: { style: 'auto', font: 'auto', wordByWord: true, emphasis: true, icons: true, size: 1, cardPhotos: 'places', cardFolder: '', onArtModes: true, cardEvery: 4 },
   player: { show: true, autoHide: false },
   window: { onTop: false, launchFullscreen: false },
   offsetMs: 0,
@@ -49,13 +49,22 @@ function sset(path, v) {
 
 // ---------- Lyric styles and fonts ----------
 const STYLE_GROUPS = [
+  ['Automatic', [['auto', 'Auto-Vibe', 'Picks a style that fits each song from its genre and how the lyrics move.']]],
   ['Classic', [['chat', 'Messages', 'Chat bubbles with photo cards from real places.'], ['scroll', 'Scroll', 'A lyric sheet that scrolls; the current line stays sharp.'], ['focus', 'Karaoke', 'Big lines that fill in word by word.'], ['minimal', 'Minimal', 'One clean line at a time.']]],
   ['Big type', [['kinetic', 'Kinetic', 'Words punch, slide and spin in like a lyric video.'], ['grid', 'Split-flap grid', 'Words flip onto giant tiles. The chorus lights them up.'], ['editorial', 'Editorial spread', 'A magazine page: huge serif type beside the album art.'], ['stack', 'Gravity stack', 'Lines drop and pile up, then shatter on the chorus.'], ['fisheye', 'Fisheye lens', 'The sung word swells under a lens, with its icon above it.']]],
-  ['Ambient', [['cloud', 'Word cloud', 'Lyrics float at different depths; the sung line zooms forward.'], ['stars', 'Constellation', 'Lines drift like stars and connect when they\'re sung.'], ['cinema', 'Cinema subtitles', 'Letterbox bars and movie subtitles over ambient light.'], ['neon', 'Neon sign', 'A glowing neon tube sign that lights up word by word.'], ['wave', 'Waveform', 'Words ride a live sound wave across the screen.']]],
+  ['Bass & motion', [['spotlight', 'Spotlight', 'A wall of hidden lyrics lit by a glowing orb that chases the singer.'], ['shockwave', 'Shockwave', 'Each line slams in and blasts the old words to the edges.'], ['tunnel', '3D tunnel', 'Lines fly out of the distance and rush past you.']]],
+  ['Ambient', [['ink', 'Liquid ink', 'Crisp words that melt into colored smoke when the line ends.'], ['cloud', 'Word cloud', 'Lyrics float at different depths; the sung line zooms forward.'], ['stars', 'Constellation', 'Lines drift like stars and connect when they\'re sung.'], ['cinema', 'Cinema subtitles', 'Letterbox bars and movie subtitles over ambient light.'], ['neon', 'Neon sign', 'A glowing neon tube sign that lights up word by word.'], ['wave', 'Waveform', 'Words ride a live sound wave across the screen.']]],
   ['Playful', [['polaroid', 'Polaroids', 'Each line is a photo dropped on a table.'], ['ticker', 'LED ticker', 'A glowing dot-matrix sign scrolling across the screen.'], ['terminal', 'Terminal', 'Lyrics type themselves out like live code.'], ['split', 'Call & response', 'Main vocals on one side, ad-libs and echoes on the other.']]],
 ];
-const STYLE_LIST = STYLE_GROUPS.flatMap(([, list]) => list);
-const styleInfo = (k) => STYLE_LIST.find((x) => x[0] === k) || STYLE_LIST[0];
+const STYLE_LIST = STYLE_GROUPS.flatMap(([, list]) => list).filter((x) => x[0] !== 'auto');
+const AUTO_INFO = STYLE_GROUPS[0][1][0];
+const styleInfo = (k) => (k === 'auto' ? AUTO_INFO : STYLE_LIST.find((x) => x[0] === k) || STYLE_LIST[0]);
+const effStyle = () => window.curStyle?.() || S.lyrics.style;
+function autoHint() {
+  const st = window.curStyle?.(); const v = window.lwState?.vibe;
+  if (!st || !v) return AUTO_INFO[2];
+  return `This song: ${styleInfo(st)[1]}, because it sounds like ${v.label}${v.reasons?.length ? ' (' + v.reasons.join(', ') + ')' : ''}. Pick any style to lock it in.`;
+}
 const FONTS = [['auto', 'Matches the style'], ['system', 'System'], ['archivo', 'Archivo Wide'], ['unbounded', 'Unbounded'], ['space', 'Space Grotesk'], ['fraunces', 'Fraunces'], ['playfair', 'Playfair'], ['instrument', 'Instrument Serif'], ['bebas', 'Bebas Neue'], ['mono', 'JetBrains Mono'], ['neon', 'Tilt Neon'], ['caveat', 'Caveat (handwritten)'], ['doto', 'Doto (dot matrix)']];
 const LIGHT_FX = [['flow', 'Flow'], ['chase', 'Chase'], ['spectrum', 'Spectrum'], ['breathe', 'Breathe'], ['static', 'Static']];
 const BG_SRC = [['album', 'Album colors'], ['albumArt', 'Album art'], ['image', 'Your image'], ['folder', 'Photo slideshow'], ['black', 'Black']];
@@ -66,16 +75,16 @@ const cap = (s) => s[0].toUpperCase() + s.slice(1);
 const pct = (v) => Math.round(v * 100) + '%';
 const UI = { open: 'lyrics', displays: [], update: { state: 'idle' }, info: null };
 const SCHEMA = [
-  { id: 'lyrics', title: 'Lyrics', summary: () => `${styleInfo(S.lyrics.style)[1]}, ${S.lyrics.font === 'auto' ? 'style font' : label(FONTS, S.lyrics.font)}`, items: [
-    { key: 'lyrics.style', label: 'Style', type: 'select', groups: STYLE_GROUPS, hint: () => styleInfo(S.lyrics.style)[2] },
+  { id: 'lyrics', title: 'Lyrics', summary: () => `${S.lyrics.style === 'auto' ? 'Auto: ' + styleInfo(effStyle())[1] : styleInfo(S.lyrics.style)[1]}, ${S.lyrics.font === 'auto' ? 'style font' : label(FONTS, S.lyrics.font)}`, items: [
+    { key: 'lyrics.style', label: 'Style', type: 'select', groups: STYLE_GROUPS, hint: () => (S.lyrics.style === 'auto' ? autoHint() : styleInfo(S.lyrics.style)[2]) },
     { key: 'lyrics.font', label: 'Font', type: 'select', options: FONTS },
     { key: 'lyrics.size', label: 'Text size', type: 'range', min: 0.6, max: 1.6, step: 0.05, fmt: pct },
     { key: 'lyrics.wordByWord', label: 'Word by word', type: 'toggle' },
     { key: 'lyrics.emphasis', label: 'Emphasize loud words', type: 'toggle', hint: () => 'Words sung harder get bigger and brighter.' },
     { key: 'lyrics.icons', label: 'Word icons', type: 'toggle', hint: () => 'Words like fire, money or moon pop a matching icon.' },
-    { key: 'lyrics.cardPhotos', label: 'Photos', type: 'seg', options: [['places', 'Places'], ['folder', 'My photos'], ['album', 'Album art'], ['off', 'Off']], when: () => ['chat', 'polaroid'].includes(S.lyrics.style) },
-    { key: 'lyrics.cardFolder', label: 'Photo folder', type: 'folder', when: () => ['chat', 'polaroid'].includes(S.lyrics.style) && S.lyrics.cardPhotos === 'folder' },
-    { key: 'lyrics.cardEvery', label: 'Card every', type: 'range', min: 2, max: 8, step: 1, fmt: (v) => v + ' lines', when: () => S.lyrics.style === 'chat' && S.lyrics.cardPhotos !== 'off' },
+    { key: 'lyrics.cardPhotos', label: 'Photos', type: 'seg', options: [['places', 'Places'], ['folder', 'My photos'], ['album', 'Album art'], ['off', 'Off']], when: () => ['chat', 'polaroid'].includes(effStyle()) },
+    { key: 'lyrics.cardFolder', label: 'Photo folder', type: 'folder', when: () => ['chat', 'polaroid'].includes(effStyle()) && S.lyrics.cardPhotos === 'folder' },
+    { key: 'lyrics.cardEvery', label: 'Card every', type: 'range', min: 2, max: 8, step: 1, fmt: (v) => v + ' lines', when: () => effStyle() === 'chat' && S.lyrics.cardPhotos !== 'off' },
     { key: 'lyrics.onArtModes', label: 'Lyrics in Cover & Vinyl', type: 'toggle' },
     { key: 'offsetMs', label: 'Timing offset', type: 'range', min: -3000, max: 3000, step: 50, fmt: (v) => (v > 0 ? '+' : '') + (v / 1000).toFixed(2) + 's' },
   ]},

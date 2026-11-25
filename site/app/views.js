@@ -464,5 +464,210 @@ const ExtraViews = (() => {
     },
   };
 
+  // ---------- Spotlight: a wall of hidden lyrics lit by a moving orb of light ----------
+  V.spotlight = {
+    font: 'bebas',
+    init() {
+      $l().innerHTML = '<div class="xray"><div class="xray-text"></div></div><div class="xray-orb"></div>';
+      const box = $l().querySelector('.xray-text');
+      this.spans = new Map();
+      // fill the screen with the song's lines; the first copy of each line is "live"
+      let filled = 0;
+      for (let rep = 0; rep < 4 && filled < 2600; rep++) {
+        state.lines.forEach((l, i) => {
+          if (isGap(i)) return;
+          const seg = mk('span', 'xl');
+          if (rep === 0) this.spans.set(i, appendWords(seg, spans(i))); else seg.textContent = l.text;
+          box.appendChild(seg); box.appendChild(document.createTextNode(' ✦ '));
+          filled += l.text.length;
+        });
+      }
+      this.p = { x: innerWidth / 2, y: innerHeight / 2, vx: 0, vy: 0 };
+      this.last = performance.now();
+    },
+    line(idx) {
+      $l().querySelectorAll('.xl.cur').forEach((e) => e.classList.remove('cur'));
+      const list = this.spans?.get(idx) || [];
+      list[0]?.parentElement.classList.add('cur');
+      return list;
+    },
+    frame(now) {
+      const box = $l().querySelector('.xray'); if (!box) return;
+      const dt = Math.min(50, now - this.last); this.last = now;
+      const beat = window.LW.beat || 0, t = now / 1000;
+      // chase the word being sung, with a wandering, beat-driven wobble
+      const sung = $l().querySelectorAll('.xl.cur .w.on');
+      const cur = sung[sung.length - 1] || $l().querySelector('.xl.cur .w');
+      let tx = innerWidth / 2 + Math.sin(t * 0.7) * innerWidth * 0.3, ty = innerHeight / 2 + Math.sin(t * 1.1) * innerHeight * 0.3;
+      if (cur) { const r = cur.getBoundingClientRect(); tx = r.left + r.width / 2; ty = r.top + r.height / 2; }
+      tx += Math.sin(t * 2.3) * 60 * (0.4 + beat); ty += Math.cos(t * 1.7) * 50 * (0.4 + beat);
+      const p = this.p, k = 0.0009 * dt, damp = Math.pow(0.9, dt / 16);
+      p.vx = (p.vx + (tx - p.x) * k) * damp; p.vy = (p.vy + (ty - p.y) * k) * damp; p.x += p.vx * dt / 16; p.y += p.vy * dt / 16;
+      const cs = colors(); const r0 = Math.min(innerWidth, innerHeight) * (0.2 + beat * 0.07);
+      box.style.setProperty('--x', p.x + 'px'); box.style.setProperty('--y', p.y + 'px'); box.style.setProperty('--r', r0 + 'px');
+      box.style.setProperty('--c1', rgb(cs[0])); box.style.setProperty('--c2', rgb(cs[1 % cs.length]));
+      const orb = $l().querySelector('.xray-orb');
+      if (orb) { orb.style.transform = `translate(${p.x}px, ${p.y}px) translate(-50%, -50%) scale(${1 + beat * 0.25})`; orb.style.background = `radial-gradient(circle, ${rgb(cs[0], 0.35)}, transparent 65%)`; }
+    },
+  };
+
+  // ---------- Shockwave: each new line slams in and blasts the old words outward ----------
+  V.shockwave = {
+    font: 'archivo',
+    init() {
+      $l().innerHTML = '<div class="shock"><div class="shock-field"></div><div class="shock-rings"></div><div class="shock-center"></div></div>';
+      this.bodies = []; this.last = performance.now(); this.lastBeat = 0;
+    },
+    blast(power) {
+      const cx = innerWidth / 2, cy = innerHeight / 2;
+      for (const b of this.bodies) {
+        const dx = b.x - cx, dy = b.y - cy, d = Math.max(40, Math.hypot(dx, dy));
+        const f = power * (1.4 - Math.min(1, d / (innerWidth * 0.7)));
+        b.vx += (dx / d) * f; b.vy += (dy / d) * f; b.vr += (Math.random() - 0.5) * f * 0.6;
+      }
+    },
+    line(idx) {
+      const host = $l().querySelector('.shock'); if (!host) return [];
+      const center = host.querySelector('.shock-center'), field = host.querySelector('.shock-field');
+      const cs = colors();
+      // the previous line breaks apart into floating words
+      center.querySelectorAll('.w').forEach((w, i) => {
+        const r = w.getBoundingClientRect(); if (!r.width) return;
+        const e = mk('div', 'fw'); e.textContent = w.textContent; e.style.color = rgb(cs[i % cs.length]);
+        field.appendChild(e);
+        this.bodies.push({ el: e, x: r.left + r.width / 2, y: r.top + r.height / 2, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, rot: 0, vr: 0, born: performance.now() });
+      });
+      while (this.bodies.length > 46) { const b = this.bodies.shift(); A()?.animate(b.el, { opacity: 0, duration: 400, onComplete: () => b.el.remove() }) || b.el.remove(); }
+      center.innerHTML = '';
+      if (idx < 0 || isGap(idx)) { center.innerHTML = gapHTML; return []; }
+      const p = mk('div', 'shock-line'); const list = appendWords(p, spans(idx)); center.appendChild(p);
+      A()?.animate(p, { scale: [2.4, 1], opacity: [0, 1], duration: 380, ease: 'outExpo' });
+      // the shockwave
+      const ring = mk('div', 'shock-ring'); ring.style.borderColor = rgb(cs[idx % cs.length]); host.querySelector('.shock-rings').appendChild(ring);
+      A()?.animate(ring, { scale: [0.1, 4], opacity: [0.9, 0], duration: 1100, ease: 'outExpo', onComplete: () => ring.remove() });
+      setTimeout(() => this.blast(26), 90);
+      return list;
+    },
+    frame(now) {
+      if (!this.bodies) return;
+      const dt = Math.min(48, now - this.last) / 16; this.last = now;
+      const beat = window.LW.beat || 0;
+      if (beat > 0.8 && now - this.lastBeat > 280) { this.lastBeat = now; this.blast(6); }
+      const W = innerWidth, H = innerHeight, pad = 40, cx = W / 2, cy = H / 2, t = now / 1000;
+      for (const b of this.bodies) {
+        // keep the centre clear so the current line stays readable
+        const dx = b.x - cx, dy = b.y - cy, d = Math.hypot(dx, dy);
+        if (d < W * 0.22) { b.vx += (dx / (d || 1)) * 0.35 * dt; b.vy += (dy / (d || 1)) * 0.35 * dt; }
+        b.vx += Math.sin(t * 0.6 + b.born) * 0.02 * dt; b.vy += Math.cos(t * 0.5 + b.born) * 0.02 * dt;
+        b.vx *= Math.pow(0.975, dt); b.vy *= Math.pow(0.975, dt); b.vr *= Math.pow(0.97, dt);
+        b.x += b.vx * dt; b.y += b.vy * dt; b.rot += b.vr * dt;
+        if (b.x < pad) { b.x = pad; b.vx = Math.abs(b.vx) * 0.8; } if (b.x > W - pad) { b.x = W - pad; b.vx = -Math.abs(b.vx) * 0.8; }
+        if (b.y < pad) { b.y = pad; b.vy = Math.abs(b.vy) * 0.8; } if (b.y > H - pad) { b.y = H - pad; b.vy = -Math.abs(b.vy) * 0.8; }
+        b.el.style.transform = `translate(${b.x}px, ${b.y}px) translate(-50%, -50%) rotate(${b.rot}deg)`;
+      }
+    },
+  };
+
+  // ---------- Liquid ink: crisp words that melt into colored smoke when the line ends ----------
+  let inkId = 0;
+  V.ink = {
+    font: 'fraunces',
+    init() { $l().innerHTML = '<svg class="ink-defs" width="0" height="0" aria-hidden="true"><defs></defs></svg><div class="ink"><div class="ink-smoke"></div></div>'; },
+    dissolve(el) {
+      el.classList.remove('cur'); el.classList.add('melting');
+      const defs = $l().querySelector('.ink-defs defs'); const id = 'inkw' + (++inkId);
+      defs.insertAdjacentHTML('beforeend', `<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%"><feTurbulence type="fractalNoise" baseFrequency="0.012 0.03" numOctaves="2" seed="${inkId}"/><feDisplacementMap in="SourceGraphic" scale="0"/></filter>`);
+      el.style.filter = `url(#${id})`;
+      const cs = colors(); const cx = innerWidth / 2;
+      // split each word into letters that drift apart
+      const chars = [];
+      el.querySelectorAll('.w').forEach((w) => {
+        const txt = w.textContent; w.textContent = '';
+        for (const ch of txt) { const c = mk('span', 'ch'); c.textContent = ch; w.appendChild(c); chars.push(c); }
+      });
+      const rects = chars.map((c) => c.getBoundingClientRect());
+      if (A()) {
+        A().animate(defs.querySelector(`#${id} feDisplacementMap`), { scale: [0, 90], duration: 3200, ease: 'outQuad' });
+        chars.forEach((c, i) => {
+          const r = rects[i], dir = (r.left + r.width / 2 - cx) / cx;
+          A().animate(c, {
+            x: dir * innerWidth * (0.15 + Math.random() * 0.25) + (Math.random() - 0.5) * 120,
+            y: -(60 + Math.random() * 220) + (Math.random() - 0.5) * 140,
+            rotate: (Math.random() - 0.5) * 120, scale: 1.6 + Math.random() * 1.6,
+            opacity: [1, 0], filter: ['blur(0px)', `blur(${10 + Math.random() * 10}px)`],
+            color: rgb(cs[i % cs.length]), duration: 2400 + Math.random() * 1600, delay: i * 14, ease: 'outCubic',
+          });
+        });
+      }
+      // a soft puff of colored smoke where the line was
+      const sm = $l().querySelector('.ink-smoke');
+      for (let k = 0; k < 3; k++) {
+        const b = mk('div', 'puff'); b.style.background = `radial-gradient(circle, ${rgb(cs[k % cs.length], 0.45)}, transparent 70%)`;
+        sm.appendChild(b);
+        A()?.animate(b, { x: (Math.random() - 0.5) * innerWidth * 0.7, y: -100 - Math.random() * 250, scale: [0.4, 2.6], opacity: [0.9, 0], duration: 3600, ease: 'outQuad', onComplete: () => b.remove() });
+      }
+      setTimeout(() => { el.remove(); defs.querySelector('#' + id)?.remove(); }, 4300);
+    },
+    line(idx) {
+      const host = $l().querySelector('.ink'); if (!host) return [];
+      const old = host.querySelector('.ink-line.cur'); if (old) this.dissolve(old);
+      const el = mk('div', 'ink-line cur'); host.appendChild(el);
+      if (idx < 0 || isGap(idx)) { el.innerHTML = gapHTML; return []; }
+      const list = appendWords(el, spans(idx));
+      A()?.animate(el, { opacity: [0, 1], filter: ['blur(18px)', 'blur(0px)'], scale: [1.08, 1], duration: 1000, ease: 'outCubic' });
+      return list;
+    },
+  };
+
+  // ---------- 3D tunnel: lines fly out of the distance and rush past you ----------
+  V.tunnel = {
+    font: 'unbounded',
+    init() {
+      $l().innerHTML = '<div class="tunnel"><div class="rings"></div><div class="tlines"></div></div>';
+      const rings = $l().querySelector('.rings');
+      for (let k = 0; k < 12; k++) rings.appendChild(mk('div', 'tring'));
+      this.els = new Map(); this.phase = 0; this.last = performance.now();
+    },
+    make(i, live) {
+      if (this.els.has(i) || !state.lines[i] || isGap(i)) return this.els.get(i)?.words || [];
+      const el = mk('div', 'tl3'); const words = live ? appendWords(el, spans(i)) : (el.textContent = state.lines[i].text, []);
+      $l().querySelector('.tlines').appendChild(el);
+      this.els.set(i, { el, words });
+      return words;
+    },
+    line(idx) {
+      if (!this.els) return [];
+      const ent = this.els.get(idx);
+      if (ent && !ent.words.length) { ent.el.remove(); this.els.delete(idx); }   // upgrade a preview line to a live one
+      const words = idx >= 0 ? this.make(idx, true) : [];
+      for (let k = 1; k <= 2; k++) { let j = idx + k; while (state.lines[j] && isGap(j)) j++; this.make(j, false); }
+      return words;
+    },
+    frame(now) {
+      if (!this.els) return;
+      const dt = Math.min(50, now - this.last); this.last = now;
+      const beat = window.LW.beat || 0, pos = lyricPos(), cs = colors();
+      // rings stream toward you, faster on the beat
+      this.phase = (this.phase + dt * (0.00011 + beat * 0.00035)) % 1;
+      $l().querySelectorAll('.tring').forEach((r, k, all) => {
+        const q = (this.phase + k / all.length) % 1, z = -3200 + q * 3800;
+        r.style.transform = `translate(-50%, -50%) translateZ(${z}px)`;
+        r.style.opacity = Math.min(1, q * 2.2) * (1 - Math.max(0, (q - 0.85) / 0.15));
+        r.style.borderColor = rgb(cs[k % cs.length], 0.75);
+      });
+      for (const [i, { el }] of this.els) {
+        const t0 = state.lines[i].t; let t1 = t0 + 4000; for (let j = i + 1; j < state.lines.length; j++) { t1 = state.lines[j].t; break; }
+        let z, o = 1, y = 0;
+        const ease = (q) => q * q * (3 - 2 * q);
+        if (pos < t0) { const q = 1 - Math.min(1, (t0 - pos) / 2500); z = -2800 + q * 1200; y = -8 - (1 - q) * 10; o = 0.15 + q * 0.3; }
+        else if (pos < t0 + 450) { const e = ease((pos - t0) / 450); z = -1600 + e * 1350; y = -8 * (1 - e); o = 0.45 + e * 0.55; }
+        else if (pos < t1) { z = -250 + ((pos - t0 - 450) / Math.max(1, t1 - t0 - 450)) * 330; }
+        else { const q = (pos - t1) / 650; z = 80 + q * 600; o = 1 - q; if (q >= 1) { el.remove(); this.els.delete(i); continue; } }
+        el.style.transform = `translate(-50%, -50%) translateY(${y}vh) translateZ(${Math.min(660, z)}px)`;
+        el.style.opacity = Math.max(0, o);
+      }
+    },
+  };
+
   return V;
 })();
