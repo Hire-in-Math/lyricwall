@@ -13,5 +13,11 @@ $u.MusicProperties.Title = 'Flashing Lights'
 $u.MusicProperties.Artist = 'Kanye West'
 $u.MusicProperties.AlbumTitle = 'Graduation'
 $u.Update()
+$p.CommandManager.IsEnabled = $true
 $p.Play()
+Start-Sleep -Seconds 2
+Add-Type -AssemblyName System.Runtime.WindowsRuntime
+$null = [Windows.Media.Control.GlobalSystemMediaTransportControlsSessionManager, Windows.Media.Control, ContentType = WindowsRuntime]
+Write-Output "player state: $($p.PlaybackSession.PlaybackState)  smtc status: $($p.SystemMediaTransportControls.PlaybackStatus)"
+
 Start-Sleep -Seconds 40

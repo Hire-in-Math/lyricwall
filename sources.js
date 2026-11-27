@@ -298,5 +298,5 @@ module.exports = {
     return isMac ? macControl(lastApp, action, arg) : isWin ? winControl(action, arg) : { ok: false, error: 'Not supported here' };
   },
   stop() { if (isWin) winStop(); },
-  _test: { lastError: () => winLastError, MAC_READ, WIN_SCRIPT, winAppName, firstArtist, feedWin: (o) => { winLatest = { ...o, at: Date.now(), firstSeen: Date.now() - 5000 }; }, setWinArt: (k, v) => winArt.set(k, v) },
+  _test: { lastError: () => winLastError, latest: () => winLatest, MAC_READ, WIN_SCRIPT, winAppName, firstArtist, feedWin: (o) => { winLatest = { ...o, at: Date.now(), firstSeen: Date.now() - 5000 }; }, setWinArt: (k, v) => winArt.set(k, v) },
 };

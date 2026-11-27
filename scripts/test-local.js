@@ -6,6 +6,7 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
     const r = await L.nowPlaying();
     if (r.art && r.art.length > 120) r.art = r.art.slice(0, 60) + `… (${r.art.length} chars)`;
     console.log('nowPlaying', JSON.stringify(r));
+    if (process.platform === 'win32') console.log('  raw', JSON.stringify(L._test.latest()));
     await wait(1500);
   }
   console.log('seek', JSON.stringify(await L.control('seek', 1000)));
