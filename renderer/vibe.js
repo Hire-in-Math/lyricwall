@@ -17,10 +17,11 @@ const Vibe = (() => {
     [/rage|drill|trap|plugg|crunk|phonk|hyperpop|frat|party rap/, { hype: 4.5 }],
     [/rap|hip hop|hip-hop|grime|boom bap|g-funk/, { rap: 3 }],
     [/edm|house|techno|trance|dubstep|electro|drum and bass|dnb|bass music|synthwave|future bass|electronica|idm/, { electronic: 3, party: 1 }],
-    [/dance pop|club|disco|reggaeton|dancehall|afrobeats|amapiano|latin/, { party: 2.5, pop: 1 }],
+    [/\bdance\b|dance pop|club|disco|reggaeton|dancehall|afrobeats|amapiano|latin/, { party: 2.5, pop: 1 }],
     [/r&b|rnb|soul|neo soul|lo-fi|lofi|chill|ambient|bedroom|downtempo|trip hop|jazz|bossa/, { chill: 3 }],
-    [/acoustic|folk|singer-songwriter|indie|country|americana|piano|classical/, { acoustic: 2.5, chill: 0.5 }],
+    [/acoustic|folk|singer.songwriter|indie|country|americana|piano|classical/, { acoustic: 2.5, chill: 0.5 }],
     [/rock|metal|punk|grunge|emo|hardcore|shoegaze/, { rock: 3 }],
+    [/alternative/, { rock: 1.5, pop: 0.5 }],
     [/pop|k-pop|kpop|j-pop/, { pop: 2 }],
   ];
   const PARTY_WORDS = /\b(party|club|turn(t| up)|shots?|drunk|lit|dance|dancin|bounce|twerk|weekend|crowd|rage|mosh|pop out|slime)\b/g;

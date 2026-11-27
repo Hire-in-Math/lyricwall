@@ -22,7 +22,7 @@
 
   <main class="guide">
     <h1>Set up LyricWall</h1>
-    <p class="lede">Install the app, connect Spotify once, and you're done. The whole thing takes about five minutes. You'll need a Spotify Premium account.</p>
+    <p class="lede">Install the app, choose where your music plays, and press play. If your music plays on this computer, you don't need Spotify Premium or any setup.</p>
 
     <h2 id="install">Install the app</h2>
     <div class="os-tabs" role="tablist" aria-label="Your computer">
@@ -78,8 +78,25 @@
       </ol>
     </section>
 
-    <h2 id="spotify">Connect Spotify</h2>
-    <p>Spotify only lets apps like LyricWall connect through a free developer app that you create yourself. It's quick, and you never have to touch it again.</p>
+    <h2 id="source">Pick where your music plays</h2>
+    <ol class="gsteps">
+      <li>
+        <div>
+          <h3>Choose “On this computer”</h3>
+          <p>LyricWall follows Apple Music or the Spotify app, free or Premium. There's nothing else to set up.</p>
+        </div>
+      </li>
+      <li>
+        <div>
+          <h3>On a Mac, click OK</h3>
+          <p>The first time you play a song, macOS asks if LyricWall can control Music or Spotify. Click OK so it can see what's playing. If you clicked Don't Allow, open System Settings, go to Privacy &amp; Security, then Automation, and turn on Music and Spotify under LyricWall.</p>
+        </div>
+      </li>
+    </ol>
+    <p>That's it. Play a song and the lyrics show up. You can switch sources anytime in Settings, under App.</p>
+
+    <h2 id="spotify">Optional: follow Spotify on any device</h2>
+    <p>Choose “Spotify on any device” if your music plays on your phone, a speaker or another computer. This needs Spotify Premium, and Spotify only lets apps like LyricWall connect this way through a free developer app that you create yourself. It's quick, and you never have to touch it again.</p>
     <ol class="gsteps">
       <li>
         <h3>Open the Spotify Developer Dashboard</h3>
@@ -125,10 +142,14 @@
       <dd>The Redirect URI in your Spotify app doesn't match. Open your app's Settings on the Spotify dashboard, make sure it's exactly <code>http://127.0.0.1:8888/callback</code>, and click Save.</dd>
       <dt>“User not registered in the Developer Dashboard”</dt>
       <dd>You're using someone else's Client ID. Create your own app with the steps above. Each Spotify developer app only works for its owner and up to five people they add.</dd>
+      <dt>It says “Open Apple Music or Spotify” while music is playing</dt>
+      <dd>LyricWall looks for the Music app or the Spotify app on this computer. If your music is playing in a web browser or on your phone, open Settings, go to App, and switch Music source to Spotify account (Premium).</dd>
+      <dt>It asks for permission to see what's playing (Mac)</dt>
+      <dd>Click Open System Settings on the LyricWall screen, or go to System Settings, Privacy &amp; Security, Automation, and turn on Music and Spotify under LyricWall.</dd>
       <dt>It says “Play something on Spotify” while music is playing</dt>
       <dd>Make sure you're logged in to the same Spotify account you connected, and that Private Session is off. Then give it a few seconds.</dd>
       <dt>Play, pause and skip don't work</dt>
-      <dd>These need Spotify Premium and an active device. Start playback in Spotify once, then try again.</dd>
+      <dd>With “On this computer”, make sure the Music or Spotify app is open. On Windows, change the volume in your music app. With a Spotify account, these need Premium and an active device, so start playback in Spotify once, then try again.</dd>
       <dt>The lights don't react to the beat</dt>
       <dd>On a Mac, open System Settings, go to Privacy &amp; Security, then Screen &amp; System Audio Recording, and turn on LyricWall. Press <kbd>B</kbd> in the app to try again.</dd>
       <dt>The lyrics are early or late</dt>

@@ -504,7 +504,7 @@ async function onNewTrack(tr) {
 // Auto-Vibe: choose a style for this song from its artist's genres + the lyrics
 async function decideVibe(tr) {
   let genres = [];
-  try { genres = api ? await api.artistGenres(tr.artistId) : DEMO.genres; } catch {}
+  try { genres = tr.genres?.length ? tr.genres : api ? await api.artistGenres(tr.artistId) : DEMO.genres; } catch {}
   const v = Vibe.classify({ genres, lines: state.lines, explicit: tr.explicit, title: tr.title });
   state.vibe = v;
   state.autoStyle = Vibe.pick(v.vibe, tr.id);
@@ -516,7 +516,11 @@ async function poll() {
   if (state.polling) return; state.polling = true;
   try {
     const np = api ? await api.nowPlaying() : DEMO.nowPlaying();
-    if (np.error === 'auth') { showSetup(); $('setupMsg').textContent = 'Spotify needs you to connect again. Your settings are kept.'; return; }
+    if (np.error === 'auth') {
+      if (S.source === 'spotify') { showSetup(); $('setupMsg').textContent = 'Spotify needs you to connect again. Your settings are kept.'; }
+      return;   // no source picked yet: the setup screen is already up
+    }
+    if (np.error === 'permission' || np.error === 'player') { showIdle(np.error); return; }
     setConnection(np.error);
     if (np.error) return;
     state.device = np.device || null;
@@ -538,10 +542,15 @@ function showIdle(reason) {
   if (state.track) { state.track = null; state.lines = []; $('lyrics').innerHTML = ''; $('artLyric').innerHTML = ''; }
   document.body.classList.add('is-idle');
   $('player').classList.add('hidden'); $('idle').classList.remove('hidden');
+  const local = S.source === 'local';
+  $('idleFix').hidden = reason !== 'permission';
   $('idleText').textContent = {
+    noplayer: 'Open Apple Music or Spotify and play a song.',
+    permission: 'LyricWall needs your OK to see what’s playing. In System Settings, open Privacy & Security, then Automation, and turn on Music and Spotify under LyricWall.',
+    player: 'Couldn’t read your music app. Try closing and reopening it.',
     podcast: 'Podcasts don\'t have lyrics. Play a song to bring the wall back.',
     ad: 'Ad break. The lyrics are back after it.',
-  }[reason] || 'Play something on Spotify';
+  }[reason] || (local ? 'Play something in Apple Music or Spotify' : 'Play something on Spotify');
   updateClock();
 }
 function updateClock() {
@@ -683,6 +692,13 @@ window.onSetting = (key, v) => {
   if (key === 'lyrics.cardFolder') state.cardFolderList = [];
   if (key === 'lyrics.font') applyLyricFont();
   if (key === 'window.launchFullscreen') api?.setPref('launchFullscreen', v);
+  if (key === 'source' && api) (async () => {
+    await api.setPref('source', v);
+    state.track = null;
+    const st = await api.status();
+    if (v === 'spotify' && !st.loggedIn) { openSettings(false); showSetup('', 'spotify'); }
+    else poll();
+  })();
   if (key === 'window.openAtLogin') api?.loginItem(!!v);
   if (key === 'lyrics.size') document.documentElement.style.setProperty('--lyricScale', v);
   if (key === 'lyrics.onArtModes') document.body.classList.toggle('no-art-lyrics', !v);
@@ -709,7 +725,16 @@ function friendlyError(e = '') {
   if (/access_denied/.test(e)) return 'Spotify login was cancelled. Click Connect to try again.';
   return e || 'Something went wrong. Try again.';
 }
-function showSetup(err) { $('setup').classList.remove('hidden'); if (err) $('setupErr').textContent = err; }
+function showSetup(err, view = 'spotify') {
+  $('setup').classList.remove('hidden'); $('setup').dataset.view = view;
+  if (err) $('setupErr').textContent = err;
+}
+const hideSetup = () => $('setup').classList.add('hidden');
+// the 'source' setting handler tells the main process, then polls
+function useSource(src) { if (src === 'local') hideSetup(); sset('source', src); }
+document.querySelectorAll('[data-source]').forEach((b) => (b.onclick = () => (b.dataset.source === 'local' ? useSource('local') : showSetup('', 'spotify'))));
+$('setupBack').onclick = () => showSetup('', 'choose');
+$('idleFix').onclick = () => api?.openPrivacy();
 // Client IDs are 32 letters/numbers; pull one out even if extra text or spaces came along
 const cleanId = (t = '') => (t.match(/[0-9a-f]{32}/i) || [t.trim()])[0];
 $('pasteId').onclick = async () => {
@@ -727,7 +752,7 @@ $('connect').onclick = async () => {
   if (!/^[0-9a-f]{32}$/i.test(id)) return ($('setupErr').textContent = 'That doesn’t look like a Client ID. It’s 32 letters and numbers, shown on your Spotify app’s Settings page.');
   $('setupErr').textContent = 'A browser tab opened. Log in and click Agree, then come back here…';
   const r = await api.login(id);
-  if (r.ok) { $('setup').classList.add('hidden'); $('setupErr').textContent = ''; poll(); }
+  if (r.ok) { hideSetup(); $('setupErr').textContent = ''; sset('source', 'spotify'); state.track = null; poll(); }
   else $('setupErr').textContent = friendlyError(r.error);
 };
 
@@ -883,8 +908,12 @@ const DEMO = (() => {
     document.body.classList.add('is-app', 'os-' + ((await api.appInfo()).platform || ''));
     const s = await api.status();
     $('clientId').value = s.clientId;
-    if (!s.loggedIn) showSetup();
-    else if (s.needsReauth) { showSetup(); $('setupMsg').textContent = 'New features need one more Spotify permission (playback controls). Reconnect below.'; }
+    UI.localSupported = s.localSupported;
+    document.body.classList.toggle('can-local', !!s.localSupported);
+    S.source = s.source || '';
+    if (!s.source) showSetup('', s.localSupported ? 'choose' : 'spotify');
+    else if (s.source === 'spotify' && !s.loggedIn) showSetup();
+    else if (s.source === 'spotify' && s.needsReauth) { showSetup(); $('setupMsg').textContent = 'New features need one more Spotify permission (playback controls). Reconnect below.'; }
     if (S.beat.enabled && !(await startAudio())) {
       const retry = async () => { window.removeEventListener('pointerdown', retry); if (S.beat.enabled) await startAudio(); };
       window.addEventListener('pointerdown', retry);

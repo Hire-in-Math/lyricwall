@@ -567,3 +567,23 @@ body:hover .hint { opacity: 1; }
 .paste-btn { flex: none; border: 0; border-radius: 10px; padding: 0 16px; background: rgba(255,255,255,.14); font-size: 14px; font-weight: 650; cursor: pointer; }
 .paste-btn:hover { background: rgba(255,255,255,.22); }
 .paste-btn:focus-visible { outline: 2px solid #8fc1ff; outline-offset: 2px; }
+
+/* setup: pick where the music comes from */
+#setup:not([data-view="choose"]) #setupChoose, #setup[data-view="choose"] #setupSpotify { display: none; }
+body:not(.can-local) .setup-back { display: none; }
+#setupChoose { display: grid; gap: 12px; margin-top: 4px; }
+#setupChoose .setup-sub { margin-bottom: 6px; }
+.source-opt { display: grid; gap: 4px; text-align: left; width: 100%; padding: 18px 20px; border: 0; border-radius: 16px; cursor: pointer;
+  background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,.1); transition: background .2s, box-shadow .2s, transform .15s; }
+.source-opt:hover { background: rgba(255,255,255,.1); box-shadow: inset 0 0 0 1px rgba(255,255,255,.22); }
+.source-opt:active { transform: scale(.985); }
+.source-opt:focus-visible { outline: 2px solid #8fc1ff; outline-offset: 2px; }
+.source-opt[data-source="local"] { background: linear-gradient(180deg, #4b95ff, #1f6ef0); box-shadow: 0 10px 30px rgba(31,110,240,.3); }
+.source-opt[data-source="local"]:hover { filter: brightness(1.08); }
+.source-opt b { font-size: 17px; }
+.source-opt span { font-size: 14px; line-height: 1.4; color: rgba(255,255,255,.72); }
+.source-opt[data-source="local"] span { color: rgba(255,255,255,.88); }
+.setup-foot { font-size: 13px; color: rgba(255,255,255,.45); margin-top: 4px; }
+.setup-back { margin: 0 0 8px; padding: 0; }
+.idle-fix { margin-top: 16px; border: 0; border-radius: 999px; padding: 10px 18px; background: #fff; color: #000; font-weight: 650; cursor: pointer; -webkit-app-region: no-drag; }
+.idle-fix[hidden] { display: none; }

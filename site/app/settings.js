@@ -12,6 +12,7 @@ const COLOR_PRESETS = {
 };
 
 const DEFAULTS = {
+  source: '',
   mode: 'lyrics',
   lights: {
     enabled: true, style: 'flow', colors: 'rainbow', custom: ['#ff0080', '#7a00ff', '#00d0ff'],
@@ -125,10 +126,12 @@ const SCHEMA = [
     { key: 'player.autoHide', label: 'Hide controls when idle', type: 'toggle' },
   ]},
   { id: 'app', title: 'App', summary: () => (UI.info ? 'Version ' + UI.info.version : ''), items: [
+    { key: 'source', label: 'Music source', type: 'seg', when: () => !!window.lw && UI.localSupported, options: [['local', 'This computer'], ['spotify', 'Spotify account']],
+      hint: () => S.source === 'local' ? 'Apple Music or the Spotify app on this computer. No Premium needed.' : 'Follows Spotify on any device. Needs Premium.' },
     { key: '_update', label: 'Updates', type: 'update' },
     { key: '_guide', label: 'Setup guide', type: 'action', text: 'Open', run: () => (window.lw ? window.lw.openExternal('https://lyricwall-app.netlify.app/setup.html') : window.open('https://lyricwall-app.netlify.app/setup.html')) },
     { key: '_reset', label: 'Reset settings', type: 'action', text: 'Reset', run: () => { localStorage.removeItem('lw-settings'); location.reload(); } },
-    { key: '_logout', label: 'Spotify account', type: 'action', text: 'Log out', run: async () => { await window.lw?.logout(); location.reload(); } },
+    { key: '_logout', label: 'Spotify account', type: 'action', text: 'Log out', when: () => S.source === 'spotify', run: async () => { await window.lw?.logout(); location.reload(); } },
   ]},
 ];
 

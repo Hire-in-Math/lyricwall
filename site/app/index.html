@@ -25,6 +25,20 @@
     <div class="setup-card">
       <img class="setup-logo" src="icon.png" alt="" />
       <h1>Welcome to LyricWall</h1>
+      <div id="setupChoose">
+        <p class="setup-sub">Where do you play your music?</p>
+        <button class="source-opt" data-source="local">
+          <b>On this computer</b>
+          <span>Apple Music or the Spotify app, free or Premium. Nothing to set up.</span>
+        </button>
+        <button class="source-opt" data-source="spotify">
+          <b>Spotify on any device</b>
+          <span>Follows your phone, speakers or another computer. Needs Spotify Premium and a 2-minute setup.</span>
+        </button>
+        <p class="setup-foot">You can switch anytime in Settings.</p>
+      </div>
+      <div id="setupSpotify">
+      <button class="link setup-back" id="setupBack" type="button">← Other options</button>
       <p id="setupMsg" class="setup-sub">Connect your Spotify in about 2 minutes. You only do this once.</p>
       <div class="setup-note">Spotify requires <b>Spotify Premium</b> for apps like this, and each person makes their own free Spotify developer app.</div>
       <ol class="setup-steps">
@@ -43,6 +57,7 @@
       <button id="connect">Connect Spotify</button>
       <p id="setupErr" class="err"></p>
       <button class="link" data-open="https://lyricwall-app.netlify.app/setup.html">Need help? Open the full setup guide ↗</button>
+      </div>
     </div>
   </section>
 
@@ -67,6 +82,7 @@
       <div id="idleClock" class="idle-clock"></div>
       <div id="idleDate" class="idle-date"></div>
       <p id="idleText">Play something on Spotify</p>
+      <button id="idleFix" class="idle-fix" type="button" hidden>Open System Settings</button>
     </div>
 
     <div id="player" class="player hidden">

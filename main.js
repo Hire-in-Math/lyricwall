@@ -1,4 +1,5 @@
 // LyricWall — main process: window, Spotify auth (PKCE), now-playing + lyrics fetching.
+const Local = require('./sources');
 const { app, BrowserWindow, ipcMain, shell, session, desktopCapturer, dialog, nativeImage, Menu, screen, clipboard } = require('electron');
 const http = require('http');
 const crypto = require('crypto');
@@ -188,7 +189,7 @@ async function tokenRequest(params) {
   if (!res.ok) {
     // the saved login no longer works (revoked, or the Spotify app changed): ask the user to reconnect
     if (params.grant_type === 'refresh_token' && /invalid_grant|invalid_client/.test(json.error || '')) {
-      store = { clientId: store.clientId, scopes: store.scopes }; saveStore();
+      store = { clientId: store.clientId, scopes: store.scopes, source: store.source, launchFullscreen: store.launchFullscreen }; saveStore();
       const e = new Error('auth'); e.auth = true; throw e;
     }
     throw new Error(json.error_description || json.error || 'Token request failed');
@@ -267,6 +268,14 @@ async function accessToken() {
   return store.accessToken;
 }
 let retryUntil = 0; // Spotify rate limit backoff
+
+// ---------- Music source ----------
+// 'local'   = whatever's playing in Apple Music / the Spotify app on this computer (no account needed)
+// 'spotify' = Spotify Web API (Premium, follows any device). People who set up Spotify before 1.3 keep it.
+function musicSource() {
+  if (store.source) return store.source;
+  return store.refreshToken ? 'spotify' : null;
+}
 
 // ---------- Now playing ----------
 async function nowPlaying() {
@@ -350,6 +359,7 @@ async function lyrics({ id, title, mainArtist, album, durationMs }) {
 const imgCache = new Map();
 async function fetchImage(url) {
   if (!url) return '';
+  if (url.startsWith('data:')) return url;
   if (imgCache.has(url)) return imgCache.get(url);
   try {
     const r = await fetch(url);
@@ -433,17 +443,18 @@ function readImage(p, maxW = 2000) {
 }
 
 // ---------- IPC ----------
-ipcMain.handle('status', () => ({ loggedIn: !!store.refreshToken, needsReauth: !!store.refreshToken && store.scopes !== SCOPES, clientId: store.clientId || '' }));
-ipcMain.handle('control', async (_e, action, arg) => { try { return await control(action, arg); } catch (e) { return { ok: false, error: e.message }; } });
+ipcMain.handle('status', () => ({ source: musicSource(), localSupported: Local.supported, loggedIn: !!store.refreshToken, needsReauth: !!store.refreshToken && store.scopes !== SCOPES, clientId: store.clientId || '' }));
+ipcMain.handle('control', async (_e, action, arg) => { try { return musicSource() === 'local' ? await Local.control(action, arg) : await control(action, arg); } catch (e) { return { ok: false, error: e.message }; } });
 ipcMain.handle('loginItem', (_e, v) => { if (typeof v === 'boolean') app.setLoginItemSettings({ openAtLogin: v }); return app.getLoginItemSettings().openAtLogin; });
 ipcMain.handle('login', async (_e, clientId) => { try { await login(clientId); return { ok: true }; } catch (e) { return { ok: false, error: e.message }; } });
-ipcMain.handle('logout', () => { store = { clientId: store.clientId }; saveStore(); return true; });
-ipcMain.handle('nowPlaying', async () => { try { return await nowPlaying(); } catch (e) { return { error: e.message }; } });
+ipcMain.handle('logout', () => { store = { clientId: store.clientId, source: store.source, launchFullscreen: store.launchFullscreen }; saveStore(); return true; });
+ipcMain.handle('nowPlaying', async () => { try { return musicSource() === 'local' ? await Local.nowPlaying() : await nowPlaying(); } catch (e) { return { error: e.message }; } });
 ipcMain.handle('lyrics', (_e, track) => lyrics(track));
 ipcMain.handle('fetchImage', (_e, url) => fetchImage(url));
 ipcMain.handle('toggleFullscreen', () => win.setFullScreen(!win.isFullScreen()));
 ipcMain.handle('toggleOnTop', () => { const v = !win.isAlwaysOnTop(); win.setAlwaysOnTop(v, 'floating'); return v; });
 ipcMain.handle('quit', () => app.quit());
+ipcMain.handle('openPrivacy', () => shell.openExternal(isMac ? 'x-apple.systempreferences:com.apple.preference.security?Privacy_Automation' : 'ms-settings:privacy'));
 ipcMain.handle('clipboardText', () => clipboard.readText());
 ipcMain.handle('openExternal', (_e, url) => { if (/^https:\/\//.test(url)) shell.openExternal(url); });
 ipcMain.handle('artistGenres', (_e, id) => artistGenres(id));
@@ -459,7 +470,12 @@ ipcMain.handle('minimize', () => win.minimize());
 ipcMain.handle('displays', () => displayList());
 ipcMain.handle('moveToDisplay', (_e, id, fs) => { store.displayId = id; saveStore(); return moveToDisplay(id, fs !== false); });
 ipcMain.handle('getPref', (_e, k) => store[k]);
-ipcMain.handle('setPref', (_e, k, v) => { if (['launchFullscreen'].includes(k)) { store[k] = v; saveStore(); } return true; });
+ipcMain.handle('setPref', (_e, k, v) => {
+  if (k === 'source' && !['local', 'spotify'].includes(v)) return false;
+  if (['launchFullscreen', 'source'].includes(k)) { store[k] = v; saveStore(); }
+  if (k === 'source' && v !== 'local') Local.stop();
+  return true;
+});
 ipcMain.handle('appInfo', () => ({ version: app.getVersion(), platform: process.platform, packaged: app.isPackaged }));
 ipcMain.handle('updateStatus', () => updateState);
 ipcMain.handle('checkUpdates', () => { checkUpdates(true); return true; });
@@ -477,5 +493,6 @@ else {
     app.setAboutPanelOptions?.({ applicationName: 'LyricWall', applicationVersion: app.getVersion(), website: SITE });
   });
   app.on('activate', () => { if (!win) createWindow(); });
+  app.on('will-quit', () => Local.stop());
   app.on('window-all-closed', () => app.quit());
 }
