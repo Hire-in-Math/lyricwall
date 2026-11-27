@@ -1,0 +1,27 @@
+name: Test local music readers
+on: workflow_dispatch
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Mac reader script runs
+        if: runner.os == 'macOS'
+        run: |
+          node -e "const {_test}=require('./sources.js'); require('fs').writeFileSync('/tmp/read.js', _test.MAC_READ)"
+          osascript -l JavaScript /tmp/read.js
+          node scripts/test-local.js
+      - name: Windows reader with a fake player
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $fp = Start-Process powershell -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-File','scripts/fake-player.ps1' -PassThru -NoNewWindow
+          Start-Sleep -Seconds 6
+          node scripts/test-local.js
+          Stop-Process -Id $fp.Id -ErrorAction SilentlyContinue
