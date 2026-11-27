@@ -534,11 +534,30 @@ async function poll() {
     if (state.track && np.device) {
       $('device').textContent = np.device.name ? 'on ' + np.device.name : '';
     }
+    updatePauseClock();
   } finally { state.polling = false; }
 }
 
 // ---------- idle screen + connection ----------
+// After a song has been paused for a bit, show the clock. The song stays loaded so it comes straight back.
+const PAUSE_CLOCK_MS = 15000;
+function updatePauseClock() {
+  const tr = state.track;
+  if (!tr || tr.playing) state.pausedSince = 0; else state.pausedSince ||= Date.now();
+  const on = !!(tr && !tr.playing && S.player.pausedClock !== false && Date.now() - state.pausedSince > PAUSE_CLOCK_MS);
+  if (on === document.body.classList.contains('paused-clock')) return;
+  document.body.classList.toggle('paused-clock', on);
+  $('idle').classList.toggle('hidden', !on);
+  if (on) {
+    $('idleFix').hidden = true;
+    $('idleText').textContent = `Paused: ${tr.title} by ${tr.artist}. Press Space to keep listening.`;
+    updateClock();
+    if (window.anime) anime.animate('#idle', { opacity: [0, 1], duration: 900, ease: 'outQuad' });
+  }
+}
+
 function showIdle(reason) {
+  document.body.classList.remove('paused-clock'); state.pausedSince = 0;
   if (state.track) { state.track = null; state.lines = []; $('lyrics').innerHTML = ''; $('artLyric').innerHTML = ''; }
   document.body.classList.add('is-idle');
   $('player').classList.add('hidden'); $('idle').classList.remove('hidden');
@@ -558,7 +577,7 @@ function updateClock() {
   $('idleClock').textContent = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   $('idleDate').textContent = d.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
 }
-setInterval(() => { if (document.body.classList.contains('is-idle')) updateClock(); }, 10000);
+setInterval(() => { if (document.body.classList.contains('is-idle') || document.body.classList.contains('paused-clock')) updateClock(); }, 5000);
 let connWarned = null;
 function setConnection(err) {
   const msg = err === 'offline' ? 'Can\'t reach Spotify. Retrying…' : err === 'ratelimit' ? 'Spotify asked LyricWall to slow down. Back in a few seconds.' : null;
@@ -606,7 +625,7 @@ async function control(act, arg) {
   }
   if (act === 'play' || act === 'pause') {
     tr.progressMs = currentPosition(); tr.fetchedAt = Date.now(); tr.playing = act === 'play';
-    state.holdUntil = Date.now() + 1500; updatePlayingUI();
+    state.holdUntil = Date.now() + 1500; updatePlayingUI(); updatePauseClock();
   }
   if (!api) { if (act === 'next' || act === 'previous') toast('Demo mode'); return; }
   const r = await api.control(act, arg);
@@ -692,6 +711,7 @@ window.onSetting = (key, v) => {
   if (key === 'lyrics.cardFolder') state.cardFolderList = [];
   if (key === 'lyrics.font') applyLyricFont();
   if (key === 'window.launchFullscreen') api?.setPref('launchFullscreen', v);
+  if (key === 'player.pausedClock') updatePauseClock();
   if (key === 'source' && api) (async () => {
     await api.setPref('source', v);
     state.track = null;

@@ -21,7 +21,7 @@ const DEFAULTS = {
   beat: { enabled: true, sensitivity: 0.5, pulseArt: true },
   bg: { source: 'album', imagePath: '', folderPath: '', slideSec: 30, blur: 0.25, dim: 0.35, grain: true },
   lyrics: { style: 'auto', noLyrics: 'cover', font: 'auto', wordByWord: true, emphasis: true, icons: true, size: 1, cardPhotos: 'places', cardFolder: '', onArtModes: true, cardEvery: 4 },
-  player: { show: true, autoHide: false },
+  player: { show: true, autoHide: false, pausedClock: true },
   window: { onTop: false, launchFullscreen: false, openAtLogin: false },
   offsetMs: 0,
 };
@@ -124,6 +124,7 @@ const SCHEMA = [
     { key: 'window.onTop', label: 'Always on top', type: 'toggle' },
     { key: 'player.show', label: 'Show player', type: 'toggle' },
     { key: 'player.autoHide', label: 'Hide controls when idle', type: 'toggle' },
+    { key: 'player.pausedClock', label: 'Show a clock when paused', type: 'toggle' },
   ]},
   { id: 'app', title: 'App', summary: () => (UI.info ? 'Version ' + UI.info.version : ''), items: [
     { key: 'source', label: 'Music source', type: 'seg', when: () => !!window.lw && UI.localSupported, options: [['local', 'This computer'], ['spotify', 'Spotify account']],

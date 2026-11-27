@@ -587,3 +587,6 @@ body:not(.can-local) .setup-back { display: none; }
 .setup-back { margin: 0 0 8px; padding: 0; }
 .idle-fix { margin-top: 16px; border: 0; border-radius: 999px; padding: 10px 18px; background: #fff; color: #000; font-weight: 650; cursor: pointer; -webkit-app-region: no-drag; }
 .idle-fix[hidden] { display: none; }
+
+/* paused for a while: clock over the wall, song stays loaded underneath */
+.paused-clock .view, .paused-clock #player { visibility: hidden; }
